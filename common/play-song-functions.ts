@@ -1,0 +1,318 @@
+import { AudioResource, createAudioResource, StreamType } from "@discordjs/voice";
+import { SoundCloud } from "scdl-core";
+import YouTube from "youtube-sr";
+import { getInfo } from "ytdl-core-discord";
+import ytpl from "ytpl";
+import { bot } from "..";
+import { maxPlayedSongLength, videoIdRegex } from "../models/bot.constants";
+import { IGuildConnection, IQueueOptions, IQueueResponse, ISong, ISongChapter, PlaybackType } from "../models/bot.interfaces";
+import { postPlayedSongAPI, postSongAPI } from "./api-functions";
+import { createEmbed, updateSongEmbed } from "./embed-functions";
+import { millisecondsToMinutes, secondsToMinutes } from "./helper-functions";
+import { apiEnabled, chaptersEnabled } from "../config.json";
+import ytdl from 'ytdl-core-discord';
+import fs from "fs";
+import { spawn } from 'node:child_process';
+import pathToFfmpeg from 'ffmpeg-static';
+import ytdlCore = require("ytdl-core");
+
+
+export const playSong = async (guildId: string, song: ISong) => {
+    const connection = bot.connections.get(guildId);
+    if(!connection) return;
+
+    let resource;
+
+    // pause while we fetch resource
+    connection.playerState.player.pause(true);
+
+    switch (song.mode) {
+        case PlaybackType.ytdl:
+            resource = await createYoutubeResource(song);
+            break;
+        case PlaybackType.scdl:
+            resource = await createSoundcloudResource(song);
+            break;
+        default:
+            break;
+    }
+        
+    // catch the elusive "resource has ended" error
+    try {
+        //play the music
+        if(resource) {
+            connection.playerState.player.play(resource);
+            connection.connection.subscribe(connection.playerState.player);
+            connection.playerState.currentAttempts = 0;
+        }
+        else { //try again if failed for whatever reason
+            setTimeout(playSong, 500, guildId, song);
+            return false;
+        }
+    } catch (error) {
+        if(connection.playerState.currentAttempts < 5)
+        {
+            connection.playerState.currentAttempts ++;
+            setTimeout(playSong, 500, guildId, song);
+            return false;
+        }
+        else {
+            connection.playerState.currentAttempts = 0;
+            return false;
+        }
+    }
+
+    // if we got here then we have successfully played the song
+
+    const datePlayed = new Date();
+
+    // if queued by a person
+    if(song.queuedBy) {
+        // reset the autoplay queue so we can base our future songs off this one
+        connection.playerState.autoplayer.queue.length = 0;
+    }
+
+    switch (song.mode) {
+        case PlaybackType.ytdl:
+            const ytSongInfo = await getInfo(song.url);
+            updateSongEmbed(
+                connection, 
+                {
+                    song: song,
+                    url: ytSongInfo.videoDetails.video_url,
+                    duration: secondsToMinutes(ytSongInfo.videoDetails.lengthSeconds),
+                    image: ytSongInfo.videoDetails.thumbnails[ytSongInfo.videoDetails.thumbnails.length - 1].url,
+                    mode: PlaybackType.ytdl,
+                    queuedBy: song.queuedBy
+                }
+            );
+            break;
+    
+        case PlaybackType.scdl:
+            const scSongInfo = await SoundCloud.tracks.getTrack(song.url);
+            updateSongEmbed(
+                connection,
+                {
+                    song: song,
+                    url: scSongInfo.permalink_url,
+                    duration: millisecondsToMinutes(scSongInfo.duration),
+                    image: scSongInfo.artwork_url,
+                    mode: PlaybackType.scdl,
+                    queuedBy: song.queuedBy
+                }
+            )
+            break;
+        default:
+            break;
+    }
+
+    // update current song
+    connection.playerState.currentSong = song;
+    // add song to list of played songs
+    addPlayedSong(guildId, song);
+    // create new message
+    await createEmbed(connection);
+
+    // api calls
+    if(apiEnabled) {
+        await postSongAPI(song);
+        await postPlayedSongAPI(connection.session, song, datePlayed);
+    }
+    
+}
+
+export const queueYoutubeSongUrl = async (connection, options: IQueueOptions): Promise<IQueueResponse> => {
+    const ytdlQuery = await getInfo(options.query);
+    const song = {
+        url: ytdlQuery.videoDetails.videoId,
+        title: ytdlQuery.videoDetails.title,
+        author: ytdlQuery.videoDetails.ownerChannelName,
+        mode: PlaybackType.ytdl,
+        queuedBy: options.queuedBy,
+        chapters: readYoutubeDescription(ytdlQuery.videoDetails.description, parseInt(ytdlQuery.videoDetails.lengthSeconds)),
+        currentChapter: -1
+    };
+
+    if(song.chapters?.length > 0) {
+        await createChapterResource(song);
+    }
+    
+    connection.playerState.queue.push(song);
+
+    return {
+        message: `Added **${song.title}** to queue!`
+    };
+}
+
+export const queueYoutubeSongQuery = async (connection, options: IQueueOptions): Promise<IQueueResponse> => {
+    const ytsrQuery = await YouTube.searchOne(options.query);
+    connection.playerState.queue.push({
+        url: ytsrQuery.id,
+        title: ytsrQuery.title,
+        author: ytsrQuery.channel.name,
+        mode: PlaybackType.ytdl,
+        queuedBy: options.queuedBy
+    });
+
+    return {
+        message: `Added **${ytsrQuery.title}** to queue!`
+    };
+}
+
+export const queueYoutubePlaylist = async (connection, options: IQueueOptions): Promise<IQueueResponse> => {
+    const isValid =  await ytpl.validateID(options.query);
+
+    if(isValid) {
+        const playlistInfo = await ytpl(options.query);
+
+        if(playlistInfo) {
+            if(connection) {
+                for (let i = 0; i < playlistInfo.items.length; i++) {
+                    const element = playlistInfo.items[i];
+
+                    connection.playerState.queue.push
+                    ({
+                        url: element.id,
+                        mode: PlaybackType.ytdl,
+                        title: element.title,
+                        author: element.author.name,
+                        queuedBy: options.queuedBy
+                    });
+                }
+            }
+
+            // message.channel.send(`Bot` + " has added " + "**" + `${playlistInfo.items.length}` + "**" + " songs");
+            return {
+                message: `Added **${playlistInfo.items.length}** songs to queue!`
+            };
+        }
+    }
+
+    // if we get this far it must be a mix, right??
+    return queueYoutubeMixSong(connection, options);
+}
+
+export const queueYoutubeMixSong = async (connection: IGuildConnection, options: IQueueOptions): Promise<IQueueResponse> => {
+    const id = options.query.match(videoIdRegex)[0];
+    const message = (await queueYoutubeSongUrl(connection, { query: id })).message.split(' ');
+    message.shift();
+    message.pop();
+
+    return {
+        message: `Added ${message.join(' ')} to queue! This bot does not currently support playing mixes directly.`
+    }
+}
+
+export const queueSoundcloudSong = async (connection: IGuildConnection, options: IQueueOptions): Promise<IQueueResponse> => {
+    await SoundCloud.connect();
+    const track = await SoundCloud.tracks.getTrack(options.query);
+
+    if(!track) return;
+
+    connection.playerState.queue.push({
+        url: track.permalink_url,
+        title: track.title,
+        author: track.user.username,
+        mode: PlaybackType.scdl,
+        queuedBy: options.queuedBy
+    });
+
+    return {
+        message: `Added **${track.title}** to queue!`
+    };
+}
+
+export const readYoutubeDescription = (description: string, songDuration: number): ISongChapter[]  => {
+    const descriptionArray = description.split(/\r?\n/);
+    const chapters: ISongChapter[] = [];
+    let songDurationMS = songDuration * 1000;
+
+    for (let i = descriptionArray.length - 1; i >= 0; i--) {
+        const element = descriptionArray[i];
+        const matches = element.match(/\(?(\d?[:]?\d+[:]\d+)\)?/gm);
+        if(matches?.length > 0) {
+            const time = parseInt(matches[0].split(":")[0]) * 60000 + parseInt(matches[0].split(":")[1]) * 1000;
+            const duration = songDurationMS - time;
+            songDurationMS -= duration;
+
+            chapters.unshift({
+                time: time,
+                duration: duration,
+                title: element.replace(/\(?(\d?[:]?\d+[:]\d+)\)?/gm, '')
+            });
+        }
+    }
+    return chapters;
+}
+
+export const createChapterResource = async (song: ISong) => {
+    if(song.chapters?.length > 0 && chaptersEnabled) {
+        fs.mkdir(`./chapters/${song.url}`, { recursive: true}, err => {
+            if(err) console.log(err);
+        });
+
+        const stream = await ytdlCore(song.url, { filter: "audioonly", highWaterMark: 1<<25 });
+        const outStream = fs.createWriteStream(`./chapters/${song.url}/${song.url}.webm`);
+        stream.pipe(outStream);
+        await new Promise(fulfill => outStream.on('close', fulfill)); // wait for write pipe to finish
+
+        try {
+            // const readStream = fs.createReadStream(`./chapters/${song.url}/${song.url}.webm`);
+            for (let i = 0; i < song.chapters.length; i++) {
+                console.log(i);
+                const readStream = fs.createReadStream(`./chapters/${song.url}/${song.url}.webm`);
+                const chapter = song.chapters[i];
+                const command = spawn(
+                    `${pathToFfmpeg}`, ['-i', 'pipe:0', '-ss', `${chapter.time}ms`, '-t', `${chapter.duration}ms`, '-f', 'webm', '-c', 'copy', 'pipe:1'], 
+                    {stdio: ['pipe', 'pipe', 'ignore']
+                });
+
+                //(await ytdlCore(song.url, { filter: "audioonly", highWaterMark: 1<<25 }))
+                readStream.pipe(command.stdin).on("error", (e) => {
+                    console.log(e)
+                });
+
+                const writeStream = fs.createWriteStream(`./chapters/${song.url}/${chapter.title}.webm`);
+                command.stdout.pipe(writeStream);
+                
+                await Promise.all([
+                    new Promise(fulfill => writeStream.on('close', fulfill)),
+                    new Promise(fulfill => command.stdin.on('close', fulfill)),
+                    new Promise(fulfill => command.stdout.on('close', fulfill))
+                ]);
+
+                readStream.close();
+                writeStream.end();
+                command.kill();
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    }
+}
+
+export const createYoutubeResource = async (song: ISong): Promise<AudioResource> => {
+    if(song.chapters?.length > 0 && chaptersEnabled) {
+        const stream = fs.createReadStream(`./chapters/${song.url}/${song.chapters[song.currentChapter].title}.webm`);
+        const resource = createAudioResource(stream);
+        return resource;
+    }
+
+    const stream = await ytdl(song.url, { filter: "audioonly", highWaterMark: 1<<25 });
+    return createAudioResource(stream, { inputType: StreamType.Opus });
+}
+
+export const createSoundcloudResource = async (song: ISong): Promise<AudioResource> => {
+    const stream = await SoundCloud.download(song.url, { highWaterMark: 1<<25 });
+    return createAudioResource(stream, { inputType: StreamType.Arbitrary });
+}
+
+export const addPlayedSong = (guildId: string, song: ISong) => {
+    const connection = bot.connections.get(guildId);
+    if(!connection) return;
+
+    const playedSongs = connection.playerState.playedSongs
+    if(playedSongs.length > maxPlayedSongLength)
+        playedSongs.shift();
+    playedSongs.push(song);
+}
