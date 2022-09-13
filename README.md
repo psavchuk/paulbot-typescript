@@ -8,7 +8,7 @@ Another discord bot for playing music
 - [Skills Learned](#skills-learned)
 - [Plans](#plans)
 
-![image](https://user-images.githubusercontent.com/38636939/185458538-fb30bbfe-b7dd-48f2-8a4e-ee1ddc6b62e3.png)
+![image](https://user-images.githubusercontent.com/38636939/189975732-997a5081-9d4d-40f4-8c7b-1e0dbc424969.png)
 
 ## Features
 - Interactive user experience using Discord API
