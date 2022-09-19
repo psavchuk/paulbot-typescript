@@ -12,7 +12,6 @@ export const noop = () => {};
 //https://stackoverflow.com/a/43467144
 export const isValidHttpUrl = (string) => {
     let url;
-    
     try {
         url = new URL(string);
     } catch (_) {
@@ -57,14 +56,12 @@ export const subscribeToPlayerEvents = (guildId: string) => {
             else {
                 connection.playerState.status = AudioPlayerStatus.Idle;
             }
-    
             return;
         }
         else //if there are, play the next one
         {
             playSong(guildId, connection.playerState.queue[0]);
             connection.playerState.queue.shift(); 
-    
             return;
         }
     });
@@ -73,7 +70,6 @@ export const subscribeToPlayerEvents = (guildId: string) => {
 //clears title of random symbols and other nonsense
 export const clearTitle = (title, clearParenthesis = true) => {
     if (title) {
-
         title = title.toLowerCase();
 
         if(clearParenthesis)
@@ -100,26 +96,30 @@ export const secondsToMinutes = (timeInSeconds): string => {
     let hours = (Math.floor(timeInSeconds / 3600)).toFixed(0);
     timeInSeconds = timeInSeconds - parseInt(hours) * 3600;
 
-    let minutes = ((timeInSeconds / 60) - 1).toFixed(0);
-    let seconds = ((timeInSeconds % 60)).toFixed(0);
+    let minutes = (Math.floor(timeInSeconds / 60));
+    let seconds = ((timeInSeconds % 60) - 1);
 
-    if(hours.length === 1) {
-        hours = "0" + hours;
+    if(seconds < 0)
+    {
+        minutes += seconds;
+        seconds = (60 + seconds);
     }
 
-    if(minutes.length === 1 && hours !== "00") {
-        minutes = "0" + minutes;
+    let minutesStr = minutes.toFixed(0);
+    let secondsStr = seconds.toFixed(0);
+
+    if(minutesStr.length === 1 && hours !== "0") {
+        minutesStr = "0" + minutes;
     }
 
-    if(seconds.length === 1) {
-        seconds = "0" + seconds;
+    if(secondsStr.length === 1) {
+        secondsStr = "0" + seconds;
     }
 
-    if(hours === "00")
-        return String(minutes + ":" + seconds);
+    if(hours === "0")
+        return String(minutesStr + ":" + secondsStr);
     else
-        return String(hours + ":" + minutes + ":" + seconds);
-    //return String(timeInSeconds / 60).charAt(0) + ":" + seconds;
+        return String(hours + ":" + minutesStr + ":" + secondsStr);
 }
     
 export const millisecondsToMinutes = (timeInMilliseconds): string => {
