@@ -2,6 +2,7 @@ import { Client, Collection, InteractionType } from "discord.js";
 import { ICommand, IGuildConnection } from "./bot.interfaces";
 import { token } from "../token.json";
 import fs from "node:fs";
+import { AudioPlayerStatus } from "@discordjs/voice";
 
 export class Bot {
     public connections: Collection<string, IGuildConnection> = new Collection();
@@ -31,6 +32,23 @@ export class Bot {
         this.client.on('voiceStateUpdate', async (oldState, newState) => {
             const connection = this.connections.get(newState.guild.id);
             if(!connection) return;
+
+            // checks if bot was server muted or not and pauses
+            // probably could be better way of checking if the user is Paulbot.
+            if(oldState.serverMute !== newState.serverMute) {
+                if(
+                    oldState.member.user.username === "PaulBot" && 
+                    newState.member.user.username === "PaulBot" && 
+                    oldState.member.user.bot && 
+                    newState.member.user.bot
+                ) {
+                    if(
+                        newState.serverMute && connection.playerState.status === AudioPlayerStatus.Playing ||
+                        !newState.serverMute && connection.playerState.status === AudioPlayerStatus.Paused
+                    )
+                        await this.commands?.get("pause").execute(undefined, false, newState.guild.id);
+                }    
+            }
 
             const members = connection.voiceChannel.members;
             let numOfListeners = 0;
