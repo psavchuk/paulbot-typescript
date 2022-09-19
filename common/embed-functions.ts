@@ -65,7 +65,7 @@ export const updateSongEmbed = (connection: IGuildConnection, embedOptions: ISon
         embed.addFields({name: "Autoplaying From:", value: connection.playerState.autoplayer.originalSong.title});
 
     embed.addFields(
-        {name: "Uploader:", value: embedOptions.song.author},
+        // {name: "Uploader:", value: embedOptions.song.author},
         {name: "Song Duration:", value: embedOptions.duration}
     ); 
 
