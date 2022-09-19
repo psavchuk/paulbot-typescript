@@ -1,3 +1,4 @@
+import { AudioPlayerStatus } from "@discordjs/voice";
 import { ButtonStyle } from "discord.js";
 import { bot } from "..";
 import { updateInteraction, updateMessageRowEmbedButton } from "../common/embed-functions";
@@ -33,12 +34,12 @@ export default {
             connection.playerState.autoplayer.enabled = false;
         }
 
-        if(interaction)
+        if(interaction) {
             await updateInteraction(connection, interaction);
+        }
 
-        // if(deferReply) {
-        //     await interaction?.deferReply();
-        //     await interaction?.deleteReply();
-        // }
+        if(connection.playerState.status === AudioPlayerStatus.Idle && connection.playerState.autoplayer.enabled === true) {
+            await bot.commands.get('skip').execute(undefined, false, interaction.guildId);
+        }
     }
 }
