@@ -33,7 +33,12 @@ export const updateAuthorEmbed = (connection: IGuildConnection) => {
                     embed.setAuthor({name:'In Autoplay Mode'});
                 }
                 else {
-                    embed.setAuthor({name:null});
+                    if(playerState.status === AudioPlayerStatus.Playing) {
+                        embed.setAuthor({name:'Playing'});
+                    }
+                    else {
+                        embed.setAuthor({name:'Idle'});
+                    }
                 }
             }
         }    
