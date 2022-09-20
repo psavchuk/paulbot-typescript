@@ -26,6 +26,11 @@ export const autoplayButton: IButton = {
     row: 0
 };
 
+export const loopButton: IButton = {
+    id: 0,
+    row: 1
+};
+
 export const clearButton: IButton = {
     id: 1,
     row: 1
