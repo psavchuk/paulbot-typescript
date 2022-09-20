@@ -1,5 +1,6 @@
 import { AudioPlayerStatus } from "@discordjs/voice";
 import { bot } from "..";
+import { updateEmbed } from "./embed-functions";
 import { playSong } from "./play-song-functions";
 
 export const symbolRegex = new RegExp(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/, 'g');
@@ -42,26 +43,26 @@ export const subscribeToPlayerEvents = (guildId: string) => {
         }
     });
 
-    player.on(AudioPlayerStatus.Idle, () => {
+    player.on(AudioPlayerStatus.Idle, async () => {
         if(connection.playerState.isLooping === true) {
             setTimeout(playSong, 500, guildId, connection.playerState.currentSong);
             return;
         }
-    
+        
         if(connection.playerState.queue.length === 0) { //if theres no songs left in queue
             //if we have autoplay
             if(connection.playerState.autoplayer.enabled) {
-                bot.commands.get('skip').execute(undefined, false, guildId);
+                await bot.commands.get('skip').execute(undefined, false, guildId);
             }
             else {
                 connection.playerState.status = AudioPlayerStatus.Idle;
+                await updateEmbed(connection);
             }
             return;
         }
         else //if there are, play the next one
         {
-            playSong(guildId, connection.playerState.queue[0]);
-            connection.playerState.queue.shift(); 
+            await playSong(guildId, connection.playerState.queue.shift());
             return;
         }
     });
