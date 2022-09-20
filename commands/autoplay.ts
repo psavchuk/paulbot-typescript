@@ -2,6 +2,7 @@ import { AudioPlayerStatus } from "@discordjs/voice";
 import { ButtonStyle } from "discord.js";
 import { bot } from "..";
 import { updateInteraction, updateMessageRowEmbedButton } from "../common/embed-functions";
+import { autoplayButton } from "../models/bot.constants";
 
 export default {
     name: "autoplay",
@@ -10,14 +11,11 @@ export default {
         
         const connection = bot.connections.get(interaction?.guildId || guildId);
 
-        const autoplayButtonRow = 0;
-        const autoplayButtonID = 2; // @TODO MOVE THIS
-
         if(!connection) return;
 
         if(connection.playerState.autoplayer.enabled === false) {
             updateMessageRowEmbedButton(
-                connection.messageState.messageRows[autoplayButtonRow].components[autoplayButtonID],
+                connection.messageState.messageRows[autoplayButton.row].components[autoplayButton.id],
                 "Disable Autoplay",
                 ButtonStyle.Success,
                 false
@@ -26,7 +24,7 @@ export default {
         }
         else {
             updateMessageRowEmbedButton(
-                connection.messageState.messageRows[autoplayButtonRow].components[autoplayButtonID],
+                connection.messageState.messageRows[autoplayButton.row].components[autoplayButton.id],
                 "Enable Autoplay",
                 ButtonStyle.Secondary,
                 false
@@ -39,7 +37,7 @@ export default {
         }
 
         if(connection.playerState.status === AudioPlayerStatus.Idle && connection.playerState.autoplayer.enabled === true) {
-            await bot.commands.get('skip').execute(undefined, false, interaction.guildId);
+            await bot.commands.get('skip').execute(undefined, false, interaction?.guildId || guildId);
         }
     }
 }
