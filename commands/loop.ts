@@ -1,6 +1,8 @@
+import { AudioPlayerStatus } from "@discordjs/voice";
 import { ButtonStyle } from "discord.js";
 import { bot } from "..";
 import { updateInteraction, updateMessageRowEmbedButton } from "../common/embed-functions";
+import { playSong } from "../common/play-song-functions";
 import { loopButton } from "../models/bot.constants";
 
 export default {
@@ -32,8 +34,13 @@ export default {
             connection.playerState.isLooping = false;
         }
 
-        if(interaction) {
-            await updateInteraction(connection, interaction);
+        if(connection.playerState.status === AudioPlayerStatus.Idle && connection.playerState.isLooping === true) {
+            await playSong(id, connection.playerState.currentSong);
+        }
+        else {
+            if(interaction) {
+                await updateInteraction(connection, interaction);
+            }
         }
 
         // if(interaction && deferReply) {
