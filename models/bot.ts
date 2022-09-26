@@ -3,6 +3,7 @@ import { ICommand, IGuildConnection } from "./bot.interfaces";
 import { token } from "../token.json";
 import fs from "node:fs";
 import { AudioPlayerStatus } from "@discordjs/voice";
+import { cleanChapterFolder } from "../common/helper-functions";
 
 export class Bot {
     public connections: Collection<string, IGuildConnection> = new Collection();
@@ -87,6 +88,7 @@ export class Bot {
 
     async destroy() {
         console.log("we be destroyin");
+        await cleanChapterFolder();
         for (const value of this.connections) {
             await this.commands?.get("leave").execute(undefined, false, value[0]);
         }

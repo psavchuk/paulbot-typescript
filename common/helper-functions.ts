@@ -2,6 +2,8 @@ import { AudioPlayerStatus } from "@discordjs/voice";
 import { bot } from "..";
 import { updateEmbed } from "./embed-functions";
 import { playSong } from "./play-song-functions";
+import { chaptersEnabled } from "../config.json";
+import { rm, readdir } from "fs";
 
 export const symbolRegex = new RegExp(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/, 'g');
 export const parenthesisRegex = new RegExp(/\(([^()]+)\)/, 'g');
@@ -48,23 +50,22 @@ export const subscribeToPlayerEvents = (guildId: string) => {
             setTimeout(playSong, 500, guildId, connection.playerState.currentSong);
             return;
         }
+
+        // handled in skip command
+        // if(connection.playerState.currentSong.chapters?.length > 0) {
+        //     if(++connection.playerState.currentSong.currentChapter < connection.playerState.currentSong.chapters.length - 1) {
+        //         await playSong(guildId, connection.playerState.currentSong);
+        //         return;
+        //     }
+        // }
         
-        if(connection.playerState.queue.length === 0) { //if theres no songs left in queue
-            //if we have autoplay
-            if(connection.playerState.autoplayer.enabled) {
-                await bot.commands.get('skip').execute(undefined, false, guildId);
-            }
-            else {
-                connection.playerState.status = AudioPlayerStatus.Idle;
-                await updateEmbed(connection);
-            }
+        if(connection.playerState.queue.length === 0 && !connection.playerState.autoplayer.enabled && connection.playerState.currentSong.chapters?.length === 0) {
+            connection.playerState.status = AudioPlayerStatus.Idle;
+            await updateEmbed(connection);
             return;
         }
-        else //if there are, play the next one
-        {
-            await playSong(guildId, connection.playerState.queue.shift());
-            return;
-        }
+
+        await bot.commands.get('skip').execute(undefined, false, guildId);
     });
 }
 
@@ -126,6 +127,23 @@ export const secondsToMinutes = (timeInSeconds): string => {
 export const millisecondsToMinutes = (timeInMilliseconds): string => {
     const timeInSeconds = Number(timeInMilliseconds) / 1000; //convert to seconds
     return secondsToMinutes(timeInSeconds);
+}
+
+export const cleanChapterFolder = async () => {
+    if(chaptersEnabled) {
+        // rm(path, { recursive: true, force: true })
+        readdir("./chapters/", (err, files) => {
+            if(err) {
+                console.log(err);
+                return;
+            }
+            files.forEach((file) => {
+                rm(`./chapters/${file}`, { recursive: true, force: true }, (err) => {
+                    console.log(err);
+                })
+            })
+        });
+    }
 }
 
 // https://stackoverflow.com/a/21947851
