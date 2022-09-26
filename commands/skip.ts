@@ -18,20 +18,21 @@ export default {
 
         const playerState = connection.playerState;
 
-        if(playerState.queue.length === 0) {
-            if(playerState.currentSong.chapters?.length > 0) {
-                if(++playerState.currentSong.currentChapter < playerState.currentSong.chapters.length) {
-                    await playSong(id, playerState.currentSong);
-                }
+        if(playerState.currentSong?.chapters.length > 0) {
+            if(++playerState.currentSong.currentChapter < playerState.currentSong.chapters.length) {
+                await playSong(id, playerState.currentSong);
+                return;
             }
-            else {
-                if(playerState.autoplayer.enabled) {
-                    if(playerState.autoplayer.queue.length <= 1)
-                        await autoplaySong(id, playerState.currentSong, AutoplayType.youtubeMix);
-    
-                    const _song = playerState.autoplayer.queue.shift();
-                    await playSong(id, _song);
-                }
+        }
+
+        if(playerState.queue.length === 0) {
+            if(playerState.autoplayer.enabled) {
+                if(playerState.autoplayer.queue.length <= 1)
+                    await autoplaySong(id, playerState.currentSong, AutoplayType.youtubeMix);
+
+                const _song = playerState.autoplayer.queue.shift();
+                await playSong(id, _song);
+                return;
             }
         }
         else
@@ -41,6 +42,7 @@ export default {
                 _song.currentChapter++;
 
             await playSong(id, _song);
+            return;
         }
     }
 }
