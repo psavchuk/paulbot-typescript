@@ -129,12 +129,12 @@ export const queueYoutubeSongUrl = async (connection, options: IQueueOptions): P
         author: ytdlQuery.videoDetails.ownerChannelName,
         mode: PlaybackType.ytdl,
         queuedBy: options.queuedBy,
-        chapters: readYoutubeDescription(ytdlQuery.videoDetails.description, parseInt(ytdlQuery.videoDetails.lengthSeconds)),
+        chapters: chaptersEnabled ? getChaptersFromDescription(ytdlQuery.videoDetails.description, parseInt(ytdlQuery.videoDetails.lengthSeconds)) : [],
         currentChapter: -1
     };
 
     if(song.chapters?.length > 0) {
-        await createChapterResource(song);
+        await createChapterResources(song);
     }
     
     connection.playerState.queue.push(song);
@@ -222,7 +222,8 @@ export const queueSoundcloudSong = async (connection: IGuildConnection, options:
     };
 }
 
-export const readYoutubeDescription = (description: string, songDuration: number): ISongChapter[]  => {
+// reads youtube description and checks for timestamps
+export const getChaptersFromDescription = (description: string, songDuration: number): ISongChapter[]  => {
     const descriptionArray = description.split(/\r?\n/);
     const chapters: ISongChapter[] = [];
     let songDurationMS = songDuration * 1000;
@@ -245,36 +246,47 @@ export const readYoutubeDescription = (description: string, songDuration: number
     return chapters;
 }
 
-export const createChapterResource = async (song: ISong) => {
+// loops through chapters in a youtube video and splits it up based on the time stamps
+// stored locally in ./chapters folder, deleted when bot is turned off (@TODO look for better implementation, ie after resource is finished being used)
+// currently redownloads even if chapter already exists in folder, could cause many bugs
+export const createChapterResources = async (song: ISong) => {
     if(song.chapters?.length > 0 && chaptersEnabled) {
+        // create directory to store chapters if doesn't exist
         fs.mkdir(`./chapters/${song.url}`, { recursive: true}, err => {
             if(err) console.log(err);
         });
 
+        // download full youtube video locally (faster than pulling the full video from youtube every time)
         const stream = await ytdlCore(song.url, { filter: "audioonly", highWaterMark: 1<<25 });
         const outStream = fs.createWriteStream(`./chapters/${song.url}/${song.url}.webm`);
         stream.pipe(outStream);
         await new Promise(fulfill => outStream.on('close', fulfill)); // wait for write pipe to finish
 
         try {
-            // const readStream = fs.createReadStream(`./chapters/${song.url}/${song.url}.webm`);
             for (let i = 0; i < song.chapters.length; i++) {
-                console.log(i);
+                // read the local full youtube video we downloaded
                 const readStream = fs.createReadStream(`./chapters/${song.url}/${song.url}.webm`);
                 const chapter = song.chapters[i];
+
+                console.time(chapter.title);
+
+                // use ffmpeg to split the video, starting at chapter.time
                 const command = spawn(
                     `${pathToFfmpeg}`, ['-i', 'pipe:0', '-ss', `${chapter.time}ms`, '-t', `${chapter.duration}ms`, '-f', 'webm', '-c', 'copy', 'pipe:1'], 
-                    {stdio: ['pipe', 'pipe', 'ignore']
-                });
+                    { stdio: ['pipe', 'pipe', 'ignore'] }
+                );
 
-                //(await ytdlCore(song.url, { filter: "audioonly", highWaterMark: 1<<25 }))
+                // pipe the ffmpeg query to the read stream we created for the main file
+                // this currently outputs error every time but downloads just fine, need to investigate
                 readStream.pipe(command.stdin).on("error", (e) => {
                     console.log(e)
                 });
 
+                // write the output stream we get from the command / ffmpeg query to a local file
                 const writeStream = fs.createWriteStream(`./chapters/${song.url}/${chapter.title}.webm`);
                 command.stdout.pipe(writeStream);
                 
+                // await all pipes to close
                 await Promise.all([
                     new Promise(fulfill => writeStream.on('close', fulfill)),
                     new Promise(fulfill => command.stdin.on('close', fulfill)),
@@ -284,6 +296,8 @@ export const createChapterResource = async (song: ISong) => {
                 readStream.close();
                 writeStream.end();
                 command.kill();
+
+                console.timeEnd(chapter.title);
             }
         } catch (error) {
             console.log(error);
