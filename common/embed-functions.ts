@@ -1,7 +1,7 @@
 import { AudioPlayerStatus } from "@discordjs/voice";
-import { ButtonBuilder, ButtonStyle, EmbedBuilder, UserFlags } from "discord.js";
+import { ButtonBuilder, ButtonStyle, EmbedBuilder } from "discord.js";
 import { clearButton, embedColor, soundcloudColor, youtubeColor } from "../models/bot.constants";
-import { IGuildConnection, ISong, ISongChapter, ISongEmbed } from "../models/bot.interfaces";
+import { IGuildConnection, ISong, ISongEmbed } from "../models/bot.interfaces";
 import { millisecondsToMinutes } from "./helper-functions";
 
 // embed when we join without a song played
@@ -17,32 +17,41 @@ export const updateAuthorEmbed = (connection: IGuildConnection) => {
     const embed = connection.messageState.embed;
     const playerState = connection.playerState;
 
-    if(playerState.status === AudioPlayerStatus.Paused) {
-        embed.setAuthor({name:'Paused'});
+    let author = "";
+
+    switch (playerState.status) {
+        case AudioPlayerStatus.Playing:
+            author += 'Playing ';
+            break;
+
+        case AudioPlayerStatus.Paused:
+            author += 'Paused ';
+            break;
+    
+        default:
+            author += 'Idle ';
+            break;
+    }
+
+    if(playerState.isLooping) {
+        author += '| Looping Current Song';
     }
     else {
-        if(playerState.isLooping) {
-            embed.setAuthor({name:'Looping'});
+        if(playerState.currentSong.chapters?.length > 0) {
+            author += `| Chapters left in Song: ${playerState.currentSong.chapters?.length - playerState.currentSong.currentChapter} `;
+        }
+
+        if(playerState.queue.length > 0) {
+            author += `| Songs left in Queue: ${playerState.queue.length} `;
         }
         else {
-            if(playerState.queue.length > 0) {
-                embed.setAuthor({name:`Songs left in Queue: ${playerState.queue.length}`});
+            if(playerState.autoplayer.enabled) {
+                author += '| In Autoplay Mode ';
             }
-            else {
-                if(playerState.autoplayer.enabled) {
-                    embed.setAuthor({name:'In Autoplay Mode'});
-                }
-                else {
-                    if(playerState.status === AudioPlayerStatus.Playing) {
-                        embed.setAuthor({name:'Playing'});
-                    }
-                    else {
-                        embed.setAuthor({name:'Idle'});
-                    }
-                }
-            }
-        }    
-    }
+        }
+    }    
+
+    embed.setAuthor({name:author});
 
     // if(connection.messageState.currentMessage)
     //     connection.messageState.currentMessage.edit({ embeds: [embed] });
