@@ -18,7 +18,7 @@ export default {
 
         const playerState = connection.playerState;
 
-        if(playerState.currentSong?.chapters.length > 0) {
+        if(playerState.currentSong?.chapters?.length > 0) {
             if(++playerState.currentSong.currentChapter < playerState.currentSong.chapters.length) {
                 await playSong(id, playerState.currentSong);
                 return;
