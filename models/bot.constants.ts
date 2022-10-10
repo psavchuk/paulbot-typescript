@@ -32,7 +32,7 @@ export const loopButton: IButton = {
 };
 
 export const clearButton: IButton = {
-    id: 1,
+    id: 2,
     row: 1
 };
 
@@ -74,6 +74,10 @@ export let rowTwo = new ActionRowBuilder<ButtonBuilder>().addComponents([
     new ButtonBuilder()
         .setCustomId('loop')
         .setLabel('Start Loop')
+        .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+        .setCustomId('shuffle')
+        .setLabel('Shuffle Queue')
         .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
         .setCustomId('clear')

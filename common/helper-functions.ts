@@ -146,6 +146,19 @@ export const cleanChapterFolder = async () => {
     }
 }
 
+//https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
+export const shuffle = (array): any => {
+    for(let i = array.length - 1; i >= 0; i--) {
+        // get random index
+        let j = Math.floor(Math.random() * i);
+        // swap
+        let temp = array[i];
+        array[i] = array[j];
+        array[j] = temp; 
+    }
+    return array;
+}
+
 // https://stackoverflow.com/a/21947851
 // Object to capture process exits and call app specific cleanup function
 function noOp() {};
