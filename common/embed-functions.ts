@@ -38,7 +38,7 @@ export const updateAuthorEmbed = (connection: IGuildConnection) => {
     }
     else {
         if(playerState.currentSong.chapters?.length > 0) {
-            author += `| Chapters left in Song: ${playerState.currentSong.chapters?.length - playerState.currentSong.currentChapter} `;
+            author += `| Chapters left in Song: ${playerState.currentSong.chapters?.length - playerState.currentSong.currentChapter - 1} `;
         }
 
         if(playerState.queue.length > 0) {
