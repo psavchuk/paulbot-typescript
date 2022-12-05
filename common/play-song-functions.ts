@@ -20,6 +20,7 @@ import ytdlCore = require("ytdl-core");
 export const playSong = async (guildId: string, song: ISong) => {
     const connection = bot.connections.get(guildId);
     if(!connection) return;
+    if(!song) return;
 
     let resource;
 
@@ -163,33 +164,37 @@ export const queueYoutubePlaylist = async (connection, options: IQueueOptions): 
     const isValid =  await ytpl.validateID(options.query);
 
     if(isValid) {
-        const playlistInfo = await ytpl(options.query);
+        try {
+            const playlistInfo = await ytpl(options.query);
 
-        if(playlistInfo) {
-            if(connection) {
-                for (let i = 0; i < playlistInfo.items.length; i++) {
-                    const element = playlistInfo.items[i];
-
-                    connection.playerState.queue.push
-                    ({
-                        url: element.id,
-                        mode: PlaybackType.ytdl,
-                        title: element.title,
-                        author: element.author.name,
-                        queuedBy: options.queuedBy
-                    });
+            if(playlistInfo) {
+                if(connection) {
+                    for (let i = 0; i < playlistInfo.items.length; i++) {
+                        const element = playlistInfo.items[i];
+    
+                        connection.playerState.queue.push
+                        ({
+                            url: element.id,
+                            mode: PlaybackType.ytdl,
+                            title: element.title,
+                            author: element.author.name,
+                            queuedBy: options.queuedBy
+                        });
+                    }
                 }
+    
+                // message.channel.send(`Bot` + " has added " + "**" + `${playlistInfo.items.length}` + "**" + " songs");
+                return {
+                    message: `Added **${playlistInfo.items.length}** songs to queue!`
+                };
             }
 
-            // message.channel.send(`Bot` + " has added " + "**" + `${playlistInfo.items.length}` + "**" + " songs");
-            return {
-                message: `Added **${playlistInfo.items.length}** songs to queue!`
-            };
+            // if we get this far it must be a mix, right??
+            return queueYoutubeMixSong(connection, options);
+        } catch (error) {
+            console.warn(error);
         }
     }
-
-    // if we get this far it must be a mix, right??
-    return queueYoutubeMixSong(connection, options);
 }
 
 export const queueYoutubeMixSong = async (connection: IGuildConnection, options: IQueueOptions): Promise<IQueueResponse> => {
@@ -230,16 +235,27 @@ export const getChaptersFromDescription = (description: string, songDuration: nu
 
     for (let i = descriptionArray.length - 1; i >= 0; i--) {
         const element = descriptionArray[i];
-        const matches = element.match(/\(?(\d?[:]?\d+[:]\d+)\)?/gm);
-        if(matches?.length > 0) {
-            const time = parseInt(matches[0].split(":")[0]) * 60000 + parseInt(matches[0].split(":")[1]) * 1000;
+        // const matches = element.match(/\(?(\d?[:]?\d+[:]\d+)\)?/gm);
+        // const time = parseInt(splitted[0]) * 60000 + parseInt(splitted[1]) * 1000;
+        // const matches = element.match(/\d?[:]?\d+/gm);
+        const matches = element.match(/\d+[:]\d+[:]?\d+/gm);
+        if(matches?.length > 0) { 
+            let time = 0;
+            let multiplier = 1000;
+            let splitted = matches[0].split(":");
+
+            for(let b = splitted.length - 1; b >= 0; b--) {
+                time += parseInt(splitted[b]) * multiplier;
+                multiplier *= 60;
+            }
+
             const duration = songDurationMS - time;
-            songDurationMS -= duration;
+            songDurationMS -= duration;  
 
             chapters.unshift({
                 time: time,
                 duration: duration,
-                title: element.replace(/\(?(\d?[:]?\d+[:]\d+)\)?/gm, '')
+                title: element.replace(/\d+[:]\d+[:]?\d+/gm, '')
             });
         }
     }
@@ -269,6 +285,7 @@ export const createChapterResources = async (song: ISong) => {
                 const chapter = song.chapters[i];
 
                 console.time(chapter.title);
+                console.log(chapter.duration);
 
                 // use ffmpeg to split the video, starting at chapter.time
                 const command = spawn(
