@@ -61,10 +61,6 @@ export const checkForPlayedSong = (guildId, name) => {
                 return true;
             if(_regExp2.test(element))
                 return true;
-    
-            // let value = strsimilarity.compareTwoStrings(name, element);
-            // if(value > autoplaySimilarityThreshold) 
-            //     return true;
         }
     } catch (error) {
         console.log(error);

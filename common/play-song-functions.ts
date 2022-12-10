@@ -188,23 +188,27 @@ export const queueYoutubePlaylist = async (connection, options: IQueueOptions): 
                     message: `Added **${playlistInfo.items.length}** songs to queue!`
                 };
             }
-
-            // if we get this far it must be a mix, right??
-            return queueYoutubeMixSong(connection, options);
         } catch (error) {
             console.warn(error);
         }
     }
+    
+    // if we get this far it must be a mix, right??
+    return queueYoutubeMixSong(connection, options);
 }
 
 export const queueYoutubeMixSong = async (connection: IGuildConnection, options: IQueueOptions): Promise<IQueueResponse> => {
-    const id = options.query.match(videoIdRegex)[0];
-    const message = (await queueYoutubeSongUrl(connection, { query: id })).message.split(' ');
-    message.shift();
-    message.pop();
-
-    return {
-        message: `Added ${message.join(' ')} to queue! This bot does not currently support playing mixes directly.`
+    try {
+        const id = options.query.match(videoIdRegex)[0];
+        const message = (await queueYoutubeSongUrl(connection, { query: id })).message.split(' ');
+        message.shift();
+        message.pop();
+    
+        return {
+            message: `Added ${message.join(' ')} to queue! This bot does not currently support playing mixes directly.`
+        }
+    } catch (error) {
+        console.warn(error);
     }
 }
 
