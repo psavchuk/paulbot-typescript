@@ -28,7 +28,8 @@ export default {
             session: {
                 id: uid.idFromTimestamp(date.getTime()).toString(),
                 startTime: date,
-                endTime: undefined
+                endTime: undefined,
+                songsPlayed: 0
             },
             connection: voiceConnection,
             textChannel: interaction.channel,

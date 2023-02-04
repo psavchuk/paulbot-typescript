@@ -14,6 +14,7 @@ export interface ISession {
     id: string;
     startTime: Date;
     endTime: Date;
+    songsPlayed: number;
 }
 
 export interface IMessageState {

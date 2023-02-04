@@ -20,7 +20,8 @@ export default {
 
         //@TODO move this to embed function file
         const embed = new EmbedBuilder().setTitle("Session Ended").setFields(
-            { name: 'ID', value: session.id },
+            // { name: 'ID', value: session.id },
+            { name: 'Songs Played', value: session.songsPlayed + "" },
             // { name: 'Duration', value: millisecondsToMinutes(session.startTime.getUTCMilliseconds() - session.endTime.getUTCMilliseconds()) }
         );
 
