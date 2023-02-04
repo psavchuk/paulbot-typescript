@@ -40,7 +40,7 @@ export const autoplaySong = async (guildId: string, song: ISong, mode: AutoplayT
     }
 }
 
-export const checkForPlayedSong = (guildId, name) => {
+export const checkForPlayedSong = (guildId: string, name: string) => {
     try {
         const connection = bot.connections.get(guildId);
         if(!connection) return;

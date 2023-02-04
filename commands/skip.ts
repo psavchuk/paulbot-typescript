@@ -43,7 +43,7 @@ export default {
         }
 
         if(song) {
-            connection.playerState.player.unpause();
+            // connection.playerState.player.unpause();
             await playSong(id, song);
         }
     }

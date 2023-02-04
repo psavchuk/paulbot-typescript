@@ -34,23 +34,6 @@ export class Bot {
             const connection = this.connections.get(newState.guild.id);
             if(!connection) return;
 
-            // checks if bot was server muted or not and pauses
-            // probably could be better way of checking if the user is Paulbot.
-            if(oldState.serverMute !== newState.serverMute) {
-                if(
-                    oldState.member.user.username === "PaulBot" && 
-                    newState.member.user.username === "PaulBot" && 
-                    oldState.member.user.bot && 
-                    newState.member.user.bot
-                ) {
-                    if(
-                        newState.serverMute && connection.playerState.status === AudioPlayerStatus.Playing ||
-                        !newState.serverMute && connection.playerState.status === AudioPlayerStatus.Paused
-                    )
-                        await this.commands?.get("pause").execute(undefined, false, newState.guild.id);
-                }    
-            }
-
             const members = connection.voiceChannel.members;
             let numOfListeners = 0;
 
@@ -61,13 +44,31 @@ export class Bot {
                 }
             });
 
-            if(numOfListeners === 0)
+            if(numOfListeners === 0) {
                 await this.commands?.get("leave").execute(undefined, false, newState.guild.id);
+            } else {
+                // checks if bot was server muted or not and pauses
+                // probably could be better way of checking if the user is Paulbot.
+                if(oldState.serverMute !== newState.serverMute) {
+                    if(
+                        oldState.member.user.username === "PaulBot" && 
+                        newState.member.user.username === "PaulBot" && 
+                        oldState.member.user.bot && 
+                        newState.member.user.bot
+                    ) {
+                        if(
+                            newState.serverMute && connection.playerState.status === AudioPlayerStatus.Playing ||
+                            !newState.serverMute && connection.playerState.status === AudioPlayerStatus.Paused
+                        )
+                            await this.commands?.get("pause").execute(undefined, false, newState.guild.id);
+                    }    
+                }
+            }
         });
 
         // handle interactions
         this.client.on('interactionCreate', async (interaction: any) => {
-            let command;
+            let command: ICommand;
 
             if(interaction.type === InteractionType.ApplicationCommand)
                 command = this.commands?.get(interaction.commandName);

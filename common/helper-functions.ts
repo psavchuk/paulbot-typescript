@@ -13,8 +13,9 @@ export const titleRegexList = ["music", "lyric", "video", "official"];
 export const noop = () => {};
 
 //https://stackoverflow.com/a/43467144
-export const isValidHttpUrl = (string) => {
-    let url;
+export const isValidHttpUrl = (string: string) => {
+    let url: URL;
+    
     try {
         url = new URL(string);
     } catch (_) {
@@ -61,7 +62,7 @@ export const subscribeToPlayerEvents = (guildId: string) => {
         
         if(connection.playerState.queue.length === 0 && !connection.playerState.autoplayer.enabled && connection.playerState.currentSong.chapters?.length === 0) {
             connection.playerState.status = AudioPlayerStatus.Idle;
-            await updateEmbed(connection);
+            await updateEmbed(connection, AudioPlayerStatus.Idle);
             return;
         }
 

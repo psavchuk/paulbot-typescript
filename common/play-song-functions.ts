@@ -1,4 +1,4 @@
-import { AudioResource, createAudioResource, StreamType } from "@discordjs/voice";
+import { AudioPlayerStatus, AudioResource, createAudioResource, StreamType } from "@discordjs/voice";
 import { SoundCloud } from "scdl-core";
 import YouTube from "youtube-sr";
 import { getInfo } from "ytdl-core-discord";
@@ -22,7 +22,7 @@ export const playSong = async (guildId: string, song: ISong) => {
     if(!connection) return;
     if(!song) return;
 
-    let resource;
+    let resource: AudioResource;
 
     // pause while we fetch resource
     connection.playerState.player.pause(true);
@@ -66,10 +66,11 @@ export const playSong = async (guildId: string, song: ISong) => {
     // if we got here then we have successfully played the song
 
     const datePlayed = new Date();
+    connection.session.songsPlayed++;
 
     // if queued by a person
     if(song.queuedBy) {
-        // reset the autoplay queue so we can base our future songs off this one
+        // clear the autoplay queue so we can base our future songs off this one
         connection.playerState.autoplayer.queue.length = 0;
     }
 
@@ -112,14 +113,13 @@ export const playSong = async (guildId: string, song: ISong) => {
     // add song to list of played songs
     addPlayedSong(guildId, song);
     // create new message
-    await createEmbed(connection);
+    await createEmbed(connection, AudioPlayerStatus.Playing);
 
     // api calls
     if(apiEnabled) {
         await postSongAPI(song);
         await postPlayedSongAPI(connection.session, song, datePlayed);
     }
-    
 }
 
 export const queueYoutubeSongUrl = async (connection, options: IQueueOptions): Promise<IQueueResponse> => {
@@ -183,7 +183,6 @@ export const queueYoutubePlaylist = async (connection, options: IQueueOptions): 
                     }
                 }
     
-                // message.channel.send(`Bot` + " has added " + "**" + `${playlistInfo.items.length}` + "**" + " songs");
                 return {
                     message: `Added **${playlistInfo.items.length}** songs to queue!`
                 };
@@ -201,8 +200,9 @@ export const queueYoutubeMixSong = async (connection: IGuildConnection, options:
     try {
         const id = options.query.match(videoIdRegex)[0];
         const message = (await queueYoutubeSongUrl(connection, { query: id })).message.split(' ');
-        message.shift();
-        message.pop();
+        message.shift(); // remove "added"
+        message.pop(); // remove "queue"
+        message.pop(); // remove "to"
     
         return {
             message: `Added ${message.join(' ')} to queue! This bot does not currently support playing mixes directly.`
@@ -239,9 +239,7 @@ export const getChaptersFromDescription = (description: string, songDuration: nu
 
     for (let i = descriptionArray.length - 1; i >= 0; i--) {
         const element = descriptionArray[i];
-        // const matches = element.match(/\(?(\d?[:]?\d+[:]\d+)\)?/gm);
-        // const time = parseInt(splitted[0]) * 60000 + parseInt(splitted[1]) * 1000;
-        // const matches = element.match(/\d?[:]?\d+/gm);
+        // regex that matches for 00:00:00 or 00:00
         const matches = element.match(/\d+[:]\d+[:]?\d+/gm);
         if(matches?.length > 0) { 
             let time = 0;

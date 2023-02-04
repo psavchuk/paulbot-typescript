@@ -12,24 +12,75 @@ export const initialEmbed = (iconURL: string) => new EmbedBuilder()
     .setColor(embedColor)
     .setThumbnail(iconURL);
 
+export const updateEmbed = async (connection: IGuildConnection, status?: AudioPlayerStatus) => {
+    updateAuthorEmbed(connection, status);
+    updateClearQueueButton(connection);
+
+    await connection.messageState.currentMessage.edit({ 
+        embeds: [connection.messageState.embed], 
+        components: [
+            connection.messageState.messageRows[
+                connection.messageState.currentMessageRow
+            ]
+        ] 
+    });
+}
+
+// used by action buttons
+export const updateInteraction = async (connection: IGuildConnection, interaction: any, status?: AudioPlayerStatus) => {
+    updateAuthorEmbed(connection, status);
+    updateClearQueueButton(connection);
+
+    await interaction.update({ 
+        embeds: [connection.messageState.embed], 
+        components: [
+            connection.messageState.messageRows[
+                connection.messageState.currentMessageRow
+            ]
+        ] 
+    });
+}
+
+export const createEmbed = async (connection: IGuildConnection, status?: AudioPlayerStatus) => {
+    // get rid of old message
+    if(connection.messageState.currentMessage) 
+        await connection.messageState.currentMessage.delete();
+
+    updateAuthorEmbed(connection, status);
+    updateClearQueueButton(connection);
+
+    connection.textChannel = connection.messageState.currentMessage.channel;
+    const message = await connection.textChannel.send({ 
+        embeds: [connection.messageState.embed], 
+        components: [
+            connection.messageState.messageRows[
+                connection.messageState.currentMessageRow
+            ]
+        ] 
+    });
+
+    connection.messageState.currentMessage = message;
+}
+
 // evaluates current player state and updates the author accordingly
-export const updateAuthorEmbed = (connection: IGuildConnection) => {
+export const updateAuthorEmbed = (connection: IGuildConnection, status?: AudioPlayerStatus) => {
     const embed = connection.messageState.embed;
     const playerState = connection.playerState;
 
     let author = "";
 
-    switch (playerState.status) {
+    switch (status || playerState.status) {
         case AudioPlayerStatus.Playing:
-            author += 'Playing ';
+            author += "Playing ";
             break;
 
         case AudioPlayerStatus.Paused:
-            author += 'Paused ';
+            author += "Paused ";
             break;
     
         default:
-            author += 'Idle ';
+            // author += 'Idle ';
+            author += "Playing ";
             break;
     }
 
@@ -112,58 +163,11 @@ export const updateClearQueueButton = (connection: IGuildConnection) => {
     );
 }
 
-export const updateEmbed = async (connection: IGuildConnection) => {
-    await updateAuthorEmbed(connection);
-    await updateClearQueueButton(connection);
-    await connection.messageState.currentMessage.edit({ 
-        embeds: [connection.messageState.embed], 
-        components: [
-            connection.messageState.messageRows[
-                connection.messageState.currentMessageRow
-            ]
-        ] 
-    });
-}
-
-// used by action buttons
-export const updateInteraction = async (connection: IGuildConnection, interaction: any) => {
-    await updateAuthorEmbed(connection);
-    await updateClearQueueButton(connection);
-    await interaction.update({ 
-        embeds: [connection.messageState.embed], 
-        components: [
-            connection.messageState.messageRows[
-                connection.messageState.currentMessageRow
-            ]
-        ] 
-    });
-}
-
-export const createEmbed = async (connection: IGuildConnection) => {
-    // get rid of old message
-    if(connection.messageState.currentMessage) 
-        await connection.messageState.currentMessage.delete();
-
-    await updateAuthorEmbed(connection);
-    await updateClearQueueButton(connection);
-    connection.textChannel = connection.messageState.currentMessage.channel;
-    const message = await connection.textChannel.send({ 
-        embeds: [connection.messageState.embed], 
-        components: [
-            connection.messageState.messageRows[
-                connection.messageState.currentMessageRow
-            ]
-        ] 
-    });
-
-    connection.messageState.currentMessage = message;
-}
-
 // gets title of current chapter
 export const evaluateChapter = (duration: number, song: ISong): string => {
     const chapters = song.chapters;
     for (let i = 0; i < chapters.length; i++) {
-        if(duration => chapters[i].time * 1000 && duration < chapters[i+1].time * 1000) {
+        if(duration >= chapters[i].time * 1000 && duration < chapters[i+1].time * 1000) {
             song.currentChapter = i;
             return chapters[i].title;
         }

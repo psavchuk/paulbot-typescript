@@ -13,7 +13,10 @@ export default {
         const playButtonRow = 0;
         const playButtonID = 0;
 
+        let status: AudioPlayerStatus;
+
         if(connection.playerState.status === AudioPlayerStatus.Paused) {
+            status = AudioPlayerStatus.Playing;
             updateMessageRowEmbedButton(
                 connection.messageState.messageRows[playButtonRow].components[playButtonID],
                 "Pause",
@@ -23,6 +26,7 @@ export default {
             connection.playerState.player.unpause();
         }
         else {
+            status = AudioPlayerStatus.Paused
             updateMessageRowEmbedButton(
                 connection.messageState.messageRows[playButtonRow].components[playButtonID],
                 "Resume",
@@ -33,10 +37,10 @@ export default {
         }
 
         if(interaction) {
-            await updateInteraction(connection, interaction);
+            await updateInteraction(connection, interaction, status);
         }
         else {
-            await updateEmbed(connection);
+            await updateEmbed(connection, status);
         }
 
         if(deferReply) {
