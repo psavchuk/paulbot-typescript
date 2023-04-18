@@ -11,8 +11,11 @@ export default {
     name: "play",
     description: "Plays the Requested Song",
     async execute(interaction?: ChatInputCommandInteraction, deferReply: boolean = true) {
-        if(deferReply)
+        console.log("play command started");
+        
+        if(interaction && deferReply) {
             await interaction.deferReply({ ephemeral: true });
+        }
 
         if(!bot.connections.get(interaction.guildId))
             await bot.commands.get('join').execute(interaction, false);
@@ -23,16 +26,16 @@ export default {
         let query = interaction?.options.getString('song');
         let queueResponse: IQueueResponse;
 
-        if(isValidHttpUrl(query)) {
+        if (isValidHttpUrl(query)) {
             // it is a url
             // soundcloud
-            if(query.includes('soundcloud.com')) //could be better way of checking if it is soundcloud
+            if (query.includes('soundcloud.com')) //could be better way of checking if it is soundcloud
             {
                 queueResponse = await queueSoundcloudSong(connection, {query: query, queuedBy: userNickname});
             }
 
             // youtube
-            if(query.includes('playlist') || query.includes('list'))
+            if (query.includes('playlist') || query.includes('list'))
             {
                 queueResponse = await queueYoutubePlaylist(connection, {query: query, queuedBy: userNickname});
             }
@@ -56,19 +59,20 @@ export default {
             queueResponse = await queueYoutubeSongQuery(connection, {query: query, queuedBy: userNickname});
         }
 
-        if(deferReply && !interaction?.replied) {
+        if (deferReply && !interaction?.replied) {
             await interaction?.followUp({ 
                 content: queueResponse?.message || 'Failed to queue song', 
                 ephemeral: true 
             });
         }
         
-        if(connection.playerState.status === AudioPlayerStatus.Idle){
+        if (connection.playerState.status === AudioPlayerStatus.Idle) {
             await bot.commands.get('skip').execute(undefined, false, interaction.guildId);
         }
         else {
-            if(connection.playerState.currentSong)
+            if(connection.playerState.currentSong) {
                 await updateEmbed(connection);
+            }
         }
     }
 }

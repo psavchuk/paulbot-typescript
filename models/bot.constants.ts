@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageActionRowComponentBuilder } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 import { IButton } from "./bot.interfaces";
 
 // color constants
@@ -13,12 +13,8 @@ export const maxPlayedSongLength = 50;
 // regex constants
 export const videoIdRegex = new RegExp(/(?<=v=\s*).*?(?=\s*&)/, 'g');
 
-// option constants
-export const scrapeTrendingParameters = {
-    geoLocation: 'US',
-    parseCreatorOnRise: true,
-    page: 'music'
-};
+// URL constants
+export const youtubeTrendingMusicPlaylist = "https://youtube.com/playlist?list=PL4fGSI1pDJn6O1LS0XSdF3RyO0Rq_LDeI";
 
 // button constants
 export const autoplayButton: IButton = {

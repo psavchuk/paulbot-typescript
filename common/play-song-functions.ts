@@ -7,7 +7,7 @@ import { bot } from "..";
 import { maxPlayedSongLength, videoIdRegex } from "../models/bot.constants";
 import { IGuildConnection, IQueueOptions, IQueueResponse, ISong, ISongChapter, PlaybackType } from "../models/bot.interfaces";
 import { postPlayedSongAPI, postSongAPI } from "./api-functions";
-import { createEmbed, updateSongEmbed } from "./embed-functions";
+import { updateEmbed, updateSongEmbed } from "./embed-functions";
 import { millisecondsToMinutes, secondsToMinutes } from "./helper-functions";
 import { apiEnabled, chaptersEnabled } from "../config.json";
 import ytdl from 'ytdl-core-discord';
@@ -112,8 +112,9 @@ export const playSong = async (guildId: string, song: ISong) => {
     connection.playerState.currentSong = song;
     // add song to list of played songs
     addPlayedSong(guildId, song);
-    // create new message
-    await createEmbed(connection, AudioPlayerStatus.Playing);
+
+    // update our embed
+    await updateEmbed(connection, AudioPlayerStatus.Playing);
 
     // api calls
     if(apiEnabled) {
@@ -123,26 +124,36 @@ export const playSong = async (guildId: string, song: ISong) => {
 }
 
 export const queueYoutubeSongUrl = async (connection, options: IQueueOptions): Promise<IQueueResponse> => {
-    const ytdlQuery = await getInfo(options.query);
-    const song = {
-        url: ytdlQuery.videoDetails.videoId,
-        title: ytdlQuery.videoDetails.title,
-        author: ytdlQuery.videoDetails.ownerChannelName,
-        mode: PlaybackType.ytdl,
-        queuedBy: options.queuedBy,
-        chapters: chaptersEnabled ? getChaptersFromDescription(ytdlQuery.videoDetails.description, parseInt(ytdlQuery.videoDetails.lengthSeconds)) : [],
-        currentChapter: -1
-    };
+    try {
+        const ytdlQuery = await getInfo(options.query);
 
-    if(song.chapters?.length > 0) {
-        await createChapterResources(song);
-    }
+        // console.log(ytdlQuery);
+
+        const song = {
+            url: ytdlQuery.videoDetails.videoId,
+            title: ytdlQuery.videoDetails.title,
+            author: ytdlQuery.videoDetails.ownerChannelName,
+            mode: PlaybackType.ytdl,
+            queuedBy: options.queuedBy,
+            chapters: chaptersEnabled ? getChaptersFromDescription(ytdlQuery.videoDetails.description, parseInt(ytdlQuery.videoDetails.lengthSeconds)) : [],
+            currentChapter: -1
+        };
     
-    connection.playerState.queue.push(song);
-
-    return {
-        message: `Added **${song.title}** to queue!`
-    };
+        if(song.chapters?.length > 0) {
+            await createChapterResources(song);
+        }
+        
+        connection.playerState.queue.push(song);
+    
+        return {
+            message: `Added **${song.title}** to queue!`
+        };
+    } catch (error) {
+        console.log(error);
+        return {
+            message: `Failed to add song to queue.`
+        };
+    }
 }
 
 export const queueYoutubeSongQuery = async (connection, options: IQueueOptions): Promise<IQueueResponse> => {

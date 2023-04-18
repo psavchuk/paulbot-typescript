@@ -15,6 +15,8 @@ export const autoplaySong = async (guildId: string, song: ISong, mode: AutoplayT
     if (mode === AutoplayType.youtubeMix) {
         const mixPlaylist = await ytmix(song.url, { hl: 'en', gl: 'US' });
 
+        console.log("mixPlaylist", mixPlaylist, song);
+
         if(mixPlaylist) {
             for (let i = 0; i < mixPlaylist.items.length; i++) {
                 const element = mixPlaylist.items[i];

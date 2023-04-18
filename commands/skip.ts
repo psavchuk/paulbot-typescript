@@ -7,30 +7,32 @@ export default {
     name: "skip",
     description: "Skips the current song",
     async execute(interaction?: any, deferReply: boolean = true, guildId?: string) {
+        console.log("skip command started");
 
         const id = interaction?.guildId || guildId;
         const connection = bot.connections.get(id);
 
-        if(interaction && deferReply) {
-            await interaction?.deferReply();
-            await interaction?.deleteReply();
+        if (interaction && deferReply && !interaction.replied) {
+            await interaction.deferReply({ ephemeral: true });
         }
 
         const playerState = connection.playerState;
 
         let song: ISong;
 
-        if(playerState.currentSong?.chapters?.length > 0) {
-            if(++playerState.currentSong.currentChapter < playerState.currentSong.chapters.length) {
+        // console.log(playerState.queue.length, playerState.autoplayer.queue.length, playerState.currentSong?.chapters?.length);
+
+        if (playerState.currentSong?.chapters?.length > 0) {
+            if (++playerState.currentSong.currentChapter < playerState.currentSong.chapters.length) {
                 song = playerState.currentSong;
             }
         }
         else {
-            if(playerState.queue.length === 0) {
-                if(playerState.autoplayer.enabled) {
+            if (playerState.queue.length === 0) {
+                if (playerState.autoplayer.enabled) {
                     if(playerState.autoplayer.queue.length <= 1) 
                         await autoplaySong(id, playerState.currentSong, AutoplayType.youtubeMix);
-    
+
                     song = playerState.autoplayer.queue.shift();
                 }
             }
@@ -44,7 +46,22 @@ export default {
 
         if(song) {
             // connection.playerState.player.unpause();
+
+            if (interaction && deferReply && !interaction.replied) {
+                await interaction?.followUp({ 
+                    content: 'Skipped song!', 
+                    ephemeral: true 
+                });
+            }
+
             await playSong(id, song);
+        } else {
+            if (interaction && deferReply && !interaction.replied) {
+                await interaction?.followUp({
+                    content: 'No more songs in queue!',
+                    ephemeral: true
+                });
+            }
         }
     }
 }

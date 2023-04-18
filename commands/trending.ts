@@ -1,10 +1,10 @@
 import { ButtonStyle } from "discord.js";
 import { bot } from "..";
-import { updateMessageRowEmbedButton } from "../common/embed-functions";
-import { playSong } from "../common/play-song-functions";
-import { autoplayButton, scrapeTrendingParameters } from "../models/bot.constants";
-import { PlaybackType } from "../models/bot.interfaces";
-const ytrend = require("@freetube/yt-trending-scraper");
+import { updateEmbed, updateMessageRowEmbedButton } from "../common/embed-functions";
+import { playSong, queueYoutubePlaylist } from "../common/play-song-functions";
+import { autoplayButton, youtubeTrendingMusicPlaylist } from "../models/bot.constants";
+import { IQueueResponse, PlaybackType } from "../models/bot.interfaces";
+import { AudioPlayerStatus } from "@discordjs/voice";
 
 export default {
     name: "trending",
@@ -14,36 +14,47 @@ export default {
         const connection = bot.connections.get(interaction?.guildId);
         if(!connection) return;
 
-        const trending = await ytrend.scrape_trending_page(scrapeTrendingParameters);
+        let queueResponse: IQueueResponse;
 
-        if(trending) {
-            for (let i = 0; i < trending.length; i++) {
-                const element = trending[i];
+        queueResponse = await queueYoutubePlaylist(connection, { query: youtubeTrendingMusicPlaylist });;
 
-                connection.playerState.autoplayer.queue.push({
-                    url: element.videoId, 
-                    mode: PlaybackType.ytdl,
-                    title: element.title,
-                    author: element.author,
-                });
-            }
+        // if(trending) {
+        //     for (let i = 0; i < trending.length; i++) {
+        //         const element = trending[i];
 
-            // await bot.commands?.get("autoplay").execute(undefined, false, interaction.guildId);
+        //         connection.playerState.autoplayer.queue.push({
+        //             url: element.videoId, 
+        //             mode: PlaybackType.ytdl,
+        //             title: element.title,
+        //             author: element.author,
+        //         });
+        //     }
 
-            updateMessageRowEmbedButton(
-                connection.messageState.messageRows[autoplayButton.row].components[autoplayButton.id],
-                "Disable Autoplay",
-                ButtonStyle.Success,
-                false
-            );
-            connection.playerState.autoplayer.enabled = true;
+        //     // await bot.commands?.get("autoplay").execute(undefined, false, interaction.guildId);
 
-            await playSong(interaction.guildId, connection.playerState.autoplayer.queue.shift());
-        }
+        //     updateMessageRowEmbedButton(
+        //         connection.messageState.messageRows[autoplayButton.row].components[autoplayButton.id],
+        //         "Disable Autoplay",
+        //         ButtonStyle.Success,
+        //         false
+        //     );
+        //     connection.playerState.autoplayer.enabled = true;
+
+        //     await playSong(interaction.guildId, connection.playerState.autoplayer.queue.shift());
+        // }
 
         if(interaction && deferReply) {
             await interaction?.deferReply();
             await interaction?.deleteReply();
+        }
+
+        if (connection.playerState.status === AudioPlayerStatus.Idle) {
+            await bot.commands.get('skip').execute(undefined, false, interaction.guildId);
+        }
+        else {
+            if(connection.playerState.currentSong) {
+                await updateEmbed(connection);
+            }
         }
     }
 }

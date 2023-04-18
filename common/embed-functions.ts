@@ -1,5 +1,5 @@
 import { AudioPlayerStatus } from "@discordjs/voice";
-import { ButtonBuilder, ButtonStyle, EmbedBuilder } from "discord.js";
+import { ButtonBuilder, ButtonStyle, EmbedBuilder, TextChannel } from "discord.js";
 import { clearButton, embedColor, soundcloudColor, youtubeColor } from "../models/bot.constants";
 import { IGuildConnection, ISong, ISongEmbed } from "../models/bot.interfaces";
 import { millisecondsToMinutes } from "./helper-functions";
@@ -49,7 +49,7 @@ export const createEmbed = async (connection: IGuildConnection, status?: AudioPl
     updateAuthorEmbed(connection, status);
     updateClearQueueButton(connection);
 
-    connection.textChannel = connection.messageState.currentMessage.channel;
+    connection.textChannel = connection.messageState.currentMessage.channel as TextChannel;
     const message = await connection.textChannel.send({ 
         embeds: [connection.messageState.embed], 
         components: [

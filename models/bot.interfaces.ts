@@ -1,11 +1,11 @@
 import { AudioPlayer, AudioPlayerStatus, VoiceConnection } from "@discordjs/voice";
-import { ActionRowBuilder, ButtonBuilder, EmbedBuilder, Message, TextBasedChannel, VoiceBasedChannel } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, EmbedBuilder, Message, TextBasedChannel, TextChannel, VoiceBasedChannel, VoiceChannel } from "discord.js";
 
 export interface IGuildConnection {
     session: ISession;
     connection: VoiceConnection;
-    textChannel: TextBasedChannel;
-    voiceChannel: VoiceBasedChannel;
+    textChannel: TextChannel;
+    voiceChannel: VoiceChannel;
     messageState: IMessageState;
     playerState: IPlayerState;
 }

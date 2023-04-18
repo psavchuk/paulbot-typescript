@@ -43,9 +43,9 @@ export default {
             await updateEmbed(connection, status);
         }
 
-        if(deferReply) {
-            await interaction?.deferReply();
-            await interaction?.deleteReply();
+        if(deferReply && interaction && !interaction.replied) {
+            await interaction.deferReply();
+            await interaction.deleteReply();
         }
     }
 }

@@ -79,10 +79,13 @@ export class Bot {
             if (!command) return;
         
             try {
-                await command.execute(interaction, !interaction.isButton());
+                await command.execute(interaction, true);
             } catch (error) {
                 console.error(error);
-                await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+                
+                if (interaction && !interaction.replied) {
+                    await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+                }
             }
         });
     }
