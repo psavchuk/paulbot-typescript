@@ -123,11 +123,9 @@ export const playSong = async (guildId: string, song: ISong) => {
     }
 }
 
-export const queueYoutubeSongUrl = async (connection, options: IQueueOptions): Promise<IQueueResponse> => {
+export const queueYoutubeSongUrl = async (connection: IGuildConnection, options: IQueueOptions): Promise<IQueueResponse> => {
     try {
         const ytdlQuery = await getInfo(options.query);
-
-        // console.log(ytdlQuery);
 
         const song = {
             url: ytdlQuery.videoDetails.videoId,
@@ -143,7 +141,11 @@ export const queueYoutubeSongUrl = async (connection, options: IQueueOptions): P
             await createChapterResources(song);
         }
         
-        connection.playerState.queue.push(song);
+        if (options.playTop) {
+            connection.playerState.queue.unshift(song);
+        } else {
+            connection.playerState.queue.push(song);
+        }
     
         return {
             message: `Added **${song.title}** to queue!`
@@ -156,34 +158,41 @@ export const queueYoutubeSongUrl = async (connection, options: IQueueOptions): P
     }
 }
 
-export const queueYoutubeSongQuery = async (connection, options: IQueueOptions): Promise<IQueueResponse> => {
+export const queueYoutubeSongQuery = async (connection: IGuildConnection, options: IQueueOptions): Promise<IQueueResponse> => {
     const ytsrQuery = await YouTube.searchOne(options.query);
-    connection.playerState.queue.push({
+    const song: ISong = {
         url: ytsrQuery.id,
         title: ytsrQuery.title,
         author: ytsrQuery.channel.name,
         mode: PlaybackType.ytdl,
         queuedBy: options.queuedBy
-    });
+    };
+
+    if (options.playTop) {
+        connection.playerState.queue.unshift(song);
+    } else {
+        connection.playerState.queue.push(song);
+    }
 
     return {
         message: `Added **${ytsrQuery.title}** to queue!`
     };
 }
 
-export const queueYoutubePlaylist = async (connection, options: IQueueOptions): Promise<IQueueResponse> => {
+export const queueYoutubePlaylist = async (connection: IGuildConnection, options: IQueueOptions): Promise<IQueueResponse> => {
     const isValid =  await ytpl.validateID(options.query);
 
     if(isValid) {
         try {
             const playlistInfo = await ytpl(options.query);
+            const playlistTemporaryQueue: ISong[] = [];
 
             if(playlistInfo) {
                 if(connection) {
                     for (let i = 0; i < playlistInfo.items.length; i++) {
                         const element = playlistInfo.items[i];
     
-                        connection.playerState.queue.push
+                        playlistTemporaryQueue.push
                         ({
                             url: element.id,
                             mode: PlaybackType.ytdl,
@@ -193,9 +202,15 @@ export const queueYoutubePlaylist = async (connection, options: IQueueOptions): 
                         });
                     }
                 }
+
+                if (options.playTop) {
+                    connection.playerState.queue.unshift(...playlistTemporaryQueue);
+                } else {
+                    connection.playerState.queue.push(...playlistTemporaryQueue);
+                }
     
                 return {
-                    message: `Added **${playlistInfo.items.length}** songs to queue!`
+                    message: `Added **${playlistTemporaryQueue.length}** songs to queue!`
                 };
             }
         } catch (error) {
@@ -211,6 +226,8 @@ export const queueYoutubeMixSong = async (connection: IGuildConnection, options:
     try {
         const id = options.query.match(videoIdRegex)[0];
         const message = (await queueYoutubeSongUrl(connection, { query: id })).message.split(' ');
+
+        // really ugly code to remove "added queue to" from the message
         message.shift(); // remove "added"
         message.pop(); // remove "queue"
         message.pop(); // remove "to"

@@ -3,9 +3,9 @@ import { ActionRowBuilder, ButtonBuilder, EmbedBuilder, Message, TextBasedChanne
 
 export interface IGuildConnection {
     session: ISession;
-    connection: VoiceConnection;
-    textChannel: TextChannel;
-    voiceChannel: VoiceChannel;
+    connection?: VoiceConnection;
+    textChannel?: TextChannel;
+    voiceChannel?: VoiceChannel;
     messageState: IMessageState;
     playerState: IPlayerState;
 }
@@ -75,6 +75,7 @@ export interface ICommand {
 export interface IQueueOptions {
     query: string;
     queuedBy?: string;
+    playTop?: boolean;
 }
 
 export interface IQueueResponse {
