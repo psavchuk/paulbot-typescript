@@ -22,6 +22,11 @@ export const autoplayButton: IButton = {
     row: 0
 };
 
+export const pauseButton: IButton = {
+    id: 0,
+    row: 0
+};
+
 export const loopButton: IButton = {
     id: 0,
     row: 1
@@ -40,6 +45,22 @@ export let initialRow = new ActionRowBuilder<ButtonBuilder>()
             .setEmoji('📈')
             .setLabel('Trending')
             .setStyle(ButtonStyle.Secondary),
+    ]);
+
+export let sessionEndedRow = new ActionRowBuilder<ButtonBuilder>()
+    .addComponents([
+        new ButtonBuilder()
+            .setCustomId('continuesession')
+            .setLabel('Continue')
+            .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId('restartsession')
+            .setLabel('Restart')
+            .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId('deletesession')
+            .setLabel('Delete')
+            .setStyle(ButtonStyle.Danger),
     ]);
 
 export let rowOne = new ActionRowBuilder<ButtonBuilder>()
@@ -64,23 +85,24 @@ export let rowOne = new ActionRowBuilder<ButtonBuilder>()
             .setCustomId('more')
             .setLabel('. . .')
             .setStyle(ButtonStyle.Secondary)
-]);
+    ]);
 
-export let rowTwo = new ActionRowBuilder<ButtonBuilder>().addComponents([
-    new ButtonBuilder()
-        .setCustomId('loop')
-        .setLabel('Start Loop')
-        .setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder()
-        .setCustomId('shuffle')
-        .setLabel('Shuffle Queue')
-        .setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder()
-        .setCustomId('clear')
-        .setLabel('Clear Queue')
-        .setStyle(ButtonStyle.Danger),
-    new ButtonBuilder()
-        .setCustomId('more')
-        .setLabel('. . .')
-        .setStyle(ButtonStyle.Success)
-]);
+export let rowTwo = new ActionRowBuilder<ButtonBuilder>()
+    .addComponents([
+        new ButtonBuilder()
+            .setCustomId('loop')
+            .setLabel('Start Loop')
+            .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId('shuffle')
+            .setLabel('Shuffle Queue')
+            .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId('clear')
+            .setLabel('Clear Queue')
+            .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
+            .setCustomId('more')
+            .setLabel('. . .')
+            .setStyle(ButtonStyle.Success)
+    ]);
