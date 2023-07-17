@@ -28,7 +28,7 @@ Another discord bot for playing music
   `{
     token: "Your Discord Token goes here" 
   }`
-- Register slash commands using [the guide here](https://discordjs.guide/interactions/slash-commands.html#guild-commands). All commands are found in the commands directory
+- Register slash commands using [the guide here](https://discordjs.guide/creating-your-bot/command-deployment.html#guild-commands). All commands are found in the commands directory. The provided script can be used: `npm run deployCommands`
 - More information on setting up a Discord bot can be found [here](https://discord.com/developers/docs/getting-started)
 - Run `npm start` in the folder where you cloned the repository to start the bot!
 
