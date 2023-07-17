@@ -1,9 +1,9 @@
+import { SlashCommandBuilder } from "discord.js";
 import { bot } from "..";
 import { updateInteraction } from "../common/embed-functions";
 
 export default {
-    name: "more",
-    description: "Shows Next Row of Actions",
+    data: new SlashCommandBuilder().setName("more").setDescription("Shows next row of actions"),
     async execute(interaction?: any, deferReply: boolean = false) {
         const connection = bot.connections.get(interaction.guildId);
         const messageState = connection.messageState;

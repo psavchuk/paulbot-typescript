@@ -1,6 +1,6 @@
 import { AudioPlayerStatus } from "@discordjs/voice";
 import { ButtonBuilder, ButtonStyle, EmbedBuilder, TextChannel } from "discord.js";
-import { clearButton, embedColor, soundcloudColor, youtubeColor } from "../models/bot.constants";
+import { autoplayButton, clearButton, embedColor, pauseButton, soundcloudColor, youtubeColor } from "../models/bot.constants";
 import { IGuildConnection, ISong, ISongEmbed } from "../models/bot.interfaces";
 import { millisecondsToMinutes } from "./helper-functions";
 
@@ -14,6 +14,7 @@ export const initialEmbed = (iconURL: string) => new EmbedBuilder()
 
 export const updateEmbed = async (connection: IGuildConnection, status?: AudioPlayerStatus) => {
     updateAuthorEmbed(connection, status);
+    updateMessageRowButtons(connection);
     updateClearQueueButton(connection);
 
     await connection.messageState.currentMessage.edit({ 
@@ -30,15 +31,18 @@ export const updateEmbed = async (connection: IGuildConnection, status?: AudioPl
 export const updateInteraction = async (connection: IGuildConnection, interaction: any, status?: AudioPlayerStatus) => {
     updateAuthorEmbed(connection, status);
     updateClearQueueButton(connection);
+    updateMessageRowButtons(connection);
 
-    await interaction.update({ 
-        embeds: [connection.messageState.embed], 
-        components: [
-            connection.messageState.messageRows[
-                connection.messageState.currentMessageRow
-            ]
-        ] 
-    });
+    if (interaction.isButton()) {
+        await interaction.update({ 
+            embeds: [connection.messageState.embed], 
+            components: [
+                connection.messageState.messageRows[
+                    connection.messageState.currentMessageRow
+                ]
+            ] 
+        });
+    }
 }
 
 export const createEmbed = async (connection: IGuildConnection, status?: AudioPlayerStatus) => {
@@ -48,6 +52,7 @@ export const createEmbed = async (connection: IGuildConnection, status?: AudioPl
 
     updateAuthorEmbed(connection, status);
     updateClearQueueButton(connection);
+    updateMessageRowButtons(connection);
 
     connection.textChannel = connection.messageState.currentMessage.channel as TextChannel;
     const message = await connection.textChannel.send({ 
@@ -145,6 +150,27 @@ export const updateSongEmbed = (connection: IGuildConnection, embedOptions: ISon
     embed.setColor(
         embedOptions.mode === 0 ? youtubeColor : soundcloudColor
     );
+
+    // updateMessageRowButtons(connection);
+}
+
+// updates button states based on player state
+export const updateMessageRowButtons = (connection: IGuildConnection) => {
+    // autoplay
+    updateMessageRowEmbedButton(
+        connection.messageState.messageRows[autoplayButton.row].components[autoplayButton.id],
+        connection.playerState.autoplayer.enabled ? "Disable Autoplay" : "Enable Autoplay",
+        connection.playerState.autoplayer.enabled ? ButtonStyle.Success :ButtonStyle.Secondary,
+        false
+    );
+
+    // pause and resume
+    updateMessageRowEmbedButton(
+        connection.messageState.messageRows[pauseButton.row].components[pauseButton.id],
+        connection.playerState.status === AudioPlayerStatus.Paused ? "Resume" : "Pause",
+        connection.playerState.status === AudioPlayerStatus.Paused ? ButtonStyle.Success : ButtonStyle.Secondary,
+        false
+    );
 }
 
 export const updateMessageRowEmbedButton = (button: ButtonBuilder, label: string, style: ButtonStyle, disabled?: boolean) => {
@@ -164,13 +190,13 @@ export const updateClearQueueButton = (connection: IGuildConnection) => {
 }
 
 // gets title of current chapter
-export const evaluateChapter = (duration: number, song: ISong): string => {
-    const chapters = song.chapters;
-    for (let i = 0; i < chapters.length; i++) {
-        if(duration >= chapters[i].time * 1000 && duration < chapters[i+1].time * 1000) {
-            song.currentChapter = i;
-            return chapters[i].title;
-        }
-    }
-    return "";
-}
+// export const evaluateChapter = (duration: number, song: ISong): string => {
+//     const chapters = song.chapters;
+//     for (let i = 0; i < chapters.length; i++) {
+//         if(duration >= chapters[i].time * 1000 && duration < chapters[i+1].time * 1000) {
+//             song.currentChapter = i;
+//             return chapters[i].title;
+//         }
+//     }
+//     return "";
+// }

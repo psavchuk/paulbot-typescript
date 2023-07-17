@@ -1,5 +1,5 @@
-import { AudioPlayerStatus, createAudioPlayer, joinVoiceChannel } from "@discordjs/voice";
-import { ChatInputCommandInteraction, TextChannel, VoiceChannel } from "discord.js";
+import { AudioPlayerStatus, VoiceConnection, createAudioPlayer, joinVoiceChannel } from "@discordjs/voice";
+import { ChatInputCommandInteraction, SlashCommandBuilder, TextChannel, VoiceChannel } from "discord.js";
 import { Snowflake } from "nodejs-snowflake";
 import { bot } from "..";
 import { postSessionAPI } from "../common/api-functions";
@@ -11,16 +11,23 @@ import { apiEnabled } from '../config.json';
 import { cloneDeep } from "lodash";
 
 export default {
-    name: "join",
-    description: "Joins the Voice Channel",
-    async execute(interaction?: ChatInputCommandInteraction, deferReply: boolean = true) {
+    data: new SlashCommandBuilder().setName("join").setDescription("Joins your current voice channel"),
+    async execute(interaction?: ChatInputCommandInteraction, deferReply: boolean = true, subscribeToEvents: boolean = true) {
 
-        const voiceChannel = (interaction.guild.members.cache.get(interaction.user.id).voice.channel as VoiceChannel);
-        const voiceConnection = joinVoiceChannel({
-            channelId: voiceChannel.id,
-            guildId: interaction.guild.id,
-            adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-        });        
+        let voiceChannel: VoiceChannel;
+        let voiceConnection: VoiceConnection;
+
+        try {
+            voiceChannel = (interaction.guild.members.cache.get(interaction.user.id).voice.channel as VoiceChannel);
+            voiceConnection = joinVoiceChannel({
+                channelId: voiceChannel.id,
+                guildId: interaction.guild.id,
+                adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+            });    
+        } catch (error) {
+            return;
+        }
+    
 
         const date = new Date();
         const uid = new Snowflake();
@@ -62,8 +69,11 @@ export default {
         };
 
         bot.connections.set(interaction.guildId, guildConnection);
-        subscribeToPlayerEvents(interaction.guildId);
 
+        if(subscribeToEvents) {
+            subscribeToPlayerEvents(interaction.guildId);
+        }
+        
         if(apiEnabled)
             await postSessionAPI(guildConnection.session);
 

@@ -1,9 +1,9 @@
+import { SlashCommandBuilder } from "discord.js";
 import { bot } from "..";
 import { updateInteraction } from "../common/embed-functions";
 
 export default {
-    name: "clear",
-    description: "Clears the Queue",
+    data: new SlashCommandBuilder().setName("clear").setDescription("Clears the current queue"),
     async execute(interaction?: any, deferReply: boolean = false) {
         const connection = bot.connections.get(interaction?.guildId);
         const userNickname = (await interaction.guild.members.fetch(interaction.user.id)).nickname || interaction.member.displayName;

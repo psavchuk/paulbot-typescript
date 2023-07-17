@@ -1,4 +1,4 @@
-import { ButtonStyle } from "discord.js";
+import { ButtonStyle, SlashCommandBuilder } from "discord.js";
 import { bot } from "..";
 import { updateEmbed, updateMessageRowEmbedButton } from "../common/embed-functions";
 import { playSong, queueYoutubePlaylist } from "../common/play-song-functions";
@@ -7,16 +7,17 @@ import { IQueueResponse, PlaybackType } from "../models/bot.interfaces";
 import { AudioPlayerStatus } from "@discordjs/voice";
 
 export default {
-    name: "trending",
-    description: "Fetch and Queue Trending Music",
+    data: new SlashCommandBuilder().setName("trending").setDescription("Fetch and queue a playlist of trending music"),
     async execute(interaction?: any, deferReply: boolean = false) {
         
         const connection = bot.connections.get(interaction?.guildId);
-        if(!connection) return;
+        if (!connection) {
+            return;
+        }
 
         let queueResponse: IQueueResponse;
 
-        queueResponse = await queueYoutubePlaylist(connection, { query: youtubeTrendingMusicPlaylist });;
+        queueResponse = await queueYoutubePlaylist(connection, { query: youtubeTrendingMusicPlaylist });
 
         // if(trending) {
         //     for (let i = 0; i < trending.length; i++) {
@@ -43,7 +44,7 @@ export default {
         //     await playSong(interaction.guildId, connection.playerState.autoplayer.queue.shift());
         // }
 
-        if(interaction && deferReply) {
+        if (interaction && deferReply) {
             await interaction?.deferReply();
             await interaction?.deleteReply();
         }
@@ -52,7 +53,7 @@ export default {
             await bot.commands.get('skip').execute(undefined, false, interaction.guildId);
         }
         else {
-            if(connection.playerState.currentSong) {
+            if (connection.playerState.currentSong) {
                 await updateEmbed(connection);
             }
         }

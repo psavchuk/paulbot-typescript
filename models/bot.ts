@@ -23,7 +23,7 @@ export class Bot {
 
         for (const file of commandFiles) {
           const command = await import(`../commands/${file}`);
-          this.commands.set(command.default.name, command.default);
+          this.commands.set(command.default.data.name, command.default);
         }
     }
 
@@ -88,6 +88,8 @@ export class Bot {
                 }
             }
         });
+
+        this.client.on('error', console.error);
     }
 
     async destroy() {

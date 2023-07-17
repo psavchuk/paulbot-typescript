@@ -1,9 +1,9 @@
+import { SlashCommandBuilder } from "discord.js";
 import { bot } from "..";
 import { shuffle } from "../common/helper-functions";
 
 export default {
-    name: "shuffle",
-    description: "Shuffles the current queue",
+    data: new SlashCommandBuilder().setName("shuffle").setDescription("Shuffles the current queue"),
     async execute(interaction?: any, deferReply: boolean = true) {
         console.log("shuffling queue!", deferReply);
 

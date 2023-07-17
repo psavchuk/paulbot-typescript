@@ -33,6 +33,7 @@ export const subscribeToPlayerEvents = (guildId: string) => {
     const player = connection.playerState.player;
 
     player.on('stateChange', (oldState, newState) => {
+        console.log("state change", oldState.status, newState.status);
         connection.playerState.status = newState.status;
     })
 
@@ -59,14 +60,22 @@ export const subscribeToPlayerEvents = (guildId: string) => {
         //         return;
         //     }
         // }
-        
-        if(connection.playerState.queue.length === 0 && !connection.playerState.autoplayer.enabled && connection.playerState.currentSong.chapters?.length === 0) {
-            connection.playerState.status = AudioPlayerStatus.Idle;
-            await updateEmbed(connection, AudioPlayerStatus.Idle);
-            return;
-        }
 
-        await bot.commands.get('skip').execute(undefined, false, guildId);
+        try {
+            if(connection.playerState.queue.length === 0 && !connection.playerState.autoplayer.enabled && connection.playerState.currentSong.chapters?.length === 0) {
+                connection.playerState.status = AudioPlayerStatus.Idle;
+                await updateEmbed(connection, AudioPlayerStatus.Idle);
+                return;
+            }    
+        } catch (error) {
+            console.log(error);
+        }
+        
+        try {
+            await bot.commands.get('skip').execute(undefined, false, guildId);   
+        } catch (error) {
+            console.log(error);
+        }
     });
 }
 
