@@ -1,11 +1,13 @@
-[
-    "join",
-    "leave",
-    "play",
-    "skip",
-    "pause",
-    "shuffle",
-    "loop",
-    "favorite",
-    "clear"
-]
+{ 
+    "defaultCommands": [
+        "join",
+        "leave",
+        "play",
+        "skip",
+        "pause",
+        "shuffle",
+        "loop",
+        "favorite",
+        "clear"
+    ]
+}

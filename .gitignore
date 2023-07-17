@@ -6,3 +6,5 @@ token.json
 .vs/VSWorkspaceState.json
 .vs/PaulBot/v15/.suo
 chapters
+sessions
+deploy-config.json
