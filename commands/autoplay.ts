@@ -1,43 +1,28 @@
 import { AudioPlayerStatus } from "@discordjs/voice";
-import { ButtonStyle } from "discord.js";
 import { bot } from "..";
-import { updateInteraction, updateMessageRowEmbedButton } from "../common/embed-functions";
-import { autoplayButton } from "../models/bot.constants";
+import { updateInteraction } from "../common/embed-functions";
+import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
 
 export default {
-    name: "autoplay",
-    description: "Toggles Autoplay",
-    async execute(interaction?: any, deferReply: boolean = false, guildId?: string) {
-        
+    data: new SlashCommandBuilder().setName("autoplay").setDescription("Toggles autoplaying of songs"),
+    async execute(interaction?: ChatInputCommandInteraction, deferReply: boolean = false, guildId?: string) {
         const connection = bot.connections.get(interaction?.guildId || guildId);
 
-        if(!connection) return;
-
-        if(connection.playerState.autoplayer.enabled === false) {
-            updateMessageRowEmbedButton(
-                connection.messageState.messageRows[autoplayButton.row].components[autoplayButton.id],
-                "Disable Autoplay",
-                ButtonStyle.Success,
-                false
-            );
-            connection.playerState.autoplayer.enabled = true;
-        }
-        else {
-            updateMessageRowEmbedButton(
-                connection.messageState.messageRows[autoplayButton.row].components[autoplayButton.id],
-                "Enable Autoplay",
-                ButtonStyle.Secondary,
-                false
-            );
-            connection.playerState.autoplayer.enabled = false;
+        if (!connection) {
+            return;
         }
 
-        if(interaction) {
+        connection.playerState.autoplayer.enabled = !connection.playerState.autoplayer.enabled;
+
+        if (interaction && connection.playerState.status !== AudioPlayerStatus.Idle) {
             await updateInteraction(connection, interaction);
         }
 
+        // use skip command to jumpstart autoplay if we are currently idle when command is activated
         if(connection.playerState.status === AudioPlayerStatus.Idle && connection.playerState.autoplayer.enabled === true) {
+            await interaction.deferReply({ ephemeral: true });
             await bot.commands.get('skip').execute(undefined, false, interaction?.guildId || guildId);
+            await interaction.deleteReply();
         }
     }
 }
