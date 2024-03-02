@@ -261,6 +261,10 @@ export const queueSoundcloudSong = async (connection: IGuildConnection, options:
 
 // reads youtube description and checks for timestamps
 export const getChaptersFromDescription = (description: string, songDuration: number): ISongChapter[]  => {
+    if (!description || description.length === 0) {
+        return [];
+    }
+
     const descriptionArray = description.split(/\r?\n/);
     const chapters: ISongChapter[] = [];
     let songDurationMS = songDuration * 1000;
