@@ -4,10 +4,14 @@ import { token } from "../token.json";
 import fs from "node:fs";
 import { AudioPlayerStatus } from "@discordjs/voice";
 import { cleanChapterFolder } from "../common/helper-functions";
+import { sessionCleanupFrequency } from "../config.json";
+import { cleanSessions } from "../common/session-functions";
 
 export class Bot {
     public connections: Collection<string, IGuildConnection> = new Collection();
     public commands: Collection<string, ICommand> = new Collection();
+
+    private _lastSessionCleanup: Date = new Date();
 
     constructor(
         public client: Client
@@ -63,6 +67,12 @@ export class Bot {
                             await this.commands?.get("pause").execute(undefined, false, newState.guild.id);
                     }    
                 }
+            }
+
+            // clean sessions if no connections and last cleanup was more than frequency ago
+            if (this.connections.size === 0 && this._lastSessionCleanup.getTime() < new Date().getTime() - sessionCleanupFrequency) {
+                cleanSessions(newState.client.channels);
+                this._lastSessionCleanup = new Date();
             }
         });
 

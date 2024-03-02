@@ -1,5 +1,5 @@
 import { AudioPlayer, AudioPlayerStatus, VoiceConnection } from "@discordjs/voice";
-import { ActionRowBuilder, ButtonBuilder, EmbedBuilder, Message, TextBasedChannel, TextChannel, VoiceBasedChannel, VoiceChannel } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, EmbedBuilder, Message, SlashCommandBuilder, TextChannel, VoiceChannel } from "discord.js";
 
 export interface IGuildConnection {
     session: ISession;
@@ -18,10 +18,13 @@ export interface ISession {
 }
 
 export interface IMessageState {
-    currentMessage: Message;
-    currentMessageRow: number;
-    embed: EmbedBuilder;
-    messageRows: ActionRowBuilder<ButtonBuilder>[];
+    currentMessage?: Message;
+    currentMessageRow?: number;
+    embed?: EmbedBuilder;
+    messageRows?: ActionRowBuilder<ButtonBuilder>[];
+
+    currentMessageId?: string;
+    currentMessageChannelId?: string;
 }
 
 export interface IPlayerState {
@@ -46,7 +49,7 @@ export interface ISong {
     mode: PlaybackType;
     title: string;
     author: string;
-    queuedBy?: string;
+    queuedBy?: string; // name of user that queued the song
     currentChapter?: number;
     chapters?: ISongChapter[];
 }
@@ -67,8 +70,7 @@ export interface ISongEmbed {
 }
 
 export interface ICommand {
-    name: string;
-    description: string;
+    data: SlashCommandBuilder;
     execute(...args: any): Promise<void>;
 }
 

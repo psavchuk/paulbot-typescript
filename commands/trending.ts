@@ -1,9 +1,9 @@
-import { ButtonStyle, SlashCommandBuilder } from "discord.js";
+import { SlashCommandBuilder } from "discord.js";
 import { bot } from "..";
-import { updateEmbed, updateMessageRowEmbedButton } from "../common/embed-functions";
-import { playSong, queueYoutubePlaylist } from "../common/play-song-functions";
-import { autoplayButton, youtubeTrendingMusicPlaylist } from "../models/bot.constants";
-import { IQueueResponse, PlaybackType } from "../models/bot.interfaces";
+import { updateEmbed } from "../common/embed-functions";
+import { queueYoutubePlaylist } from "../common/play-song-functions";
+import { youtubeTrendingMusicPlaylist } from "../models/bot.constants";
+import { IQueueResponse } from "../models/bot.interfaces";
 import { AudioPlayerStatus } from "@discordjs/voice";
 
 export default {
@@ -18,31 +18,6 @@ export default {
         let queueResponse: IQueueResponse;
 
         queueResponse = await queueYoutubePlaylist(connection, { query: youtubeTrendingMusicPlaylist });
-
-        // if(trending) {
-        //     for (let i = 0; i < trending.length; i++) {
-        //         const element = trending[i];
-
-        //         connection.playerState.autoplayer.queue.push({
-        //             url: element.videoId, 
-        //             mode: PlaybackType.ytdl,
-        //             title: element.title,
-        //             author: element.author,
-        //         });
-        //     }
-
-        //     // await bot.commands?.get("autoplay").execute(undefined, false, interaction.guildId);
-
-        //     updateMessageRowEmbedButton(
-        //         connection.messageState.messageRows[autoplayButton.row].components[autoplayButton.id],
-        //         "Disable Autoplay",
-        //         ButtonStyle.Success,
-        //         false
-        //     );
-        //     connection.playerState.autoplayer.enabled = true;
-
-        //     await playSong(interaction.guildId, connection.playerState.autoplayer.queue.shift());
-        // }
 
         if (interaction && deferReply) {
             await interaction?.deferReply();

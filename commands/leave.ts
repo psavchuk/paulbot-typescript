@@ -5,6 +5,7 @@ import { apiEnabled } from '../config.json';
 import { sessionEndedRow } from "../models/bot.constants";
 import { storeSessionInFile } from "../common/session-functions";
 import { cloneDeep } from "lodash";
+import { sessionsEnabled } from "../config.json";
 
 export default {
     data: new SlashCommandBuilder().setName("leave").setDescription("Leaves the current voice channel"),
@@ -28,12 +29,17 @@ export default {
 
         storeSessionInFile(cloneDeep(connection));
 
-        await connection.messageState.currentMessage.edit(
-            {
-                embeds: [embed],
-                components: [sessionEndedRow]
-            }
-        );
+        if (sessionsEnabled) {
+            await connection.messageState.currentMessage.edit(
+                {
+                    embeds: [embed],
+                    components: [sessionEndedRow]
+                }
+            );
+        } else {
+            await connection.messageState.currentMessage.delete();
+        }
+
 
         connection.playerState.player.stop();
         connection.connection.destroy();
