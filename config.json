@@ -1,4 +1,7 @@
 {
     "apiEnabled": false,
-    "chaptersEnabled": true
+    "chaptersEnabled": true,
+    "sessionsEnabled": true,
+    "sessionExpiration": 2629746000,
+    "sessionCleanupFrequency": 3600000
 }
