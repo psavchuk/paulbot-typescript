@@ -49,16 +49,16 @@ export default {
 
         bot.connections.set(interaction.guildId, connection);
         subscribeToPlayerEvents(interaction.guildId);
-        // await updateEmbed(connection);
 
+        // `current song` handling is confused
+        // so instead we remove the current song and add it to top of queue, then run the skip command
         if(connection.playerState.currentSong) {
             connection.playerState.queue.unshift(cloneDeep(connection.playerState.currentSong));
             connection.playerState.currentSong = undefined;
         }
+        await bot.commands.get('skip').execute(undefined, false, interaction.guildId);
 
         console.log("continuing session", connection.session.id)
-
-        await bot.commands.get('skip').execute(undefined, false, interaction.guildId);
 
         // delete the session and message after bot is set up
         try {
@@ -76,14 +76,5 @@ export default {
                 console.log(error);
             }
         }
-
-        // if (connection.playerState.status === AudioPlayerStatus.Idle) {
-        //     await bot.commands.get('skip').execute(undefined, false, interaction.guildId);
-        // }
-        // else {
-        //     if(connection.playerState.currentSong) {
-        //         await updateEmbed(connection);
-        //     }
-        // }
     }
 }

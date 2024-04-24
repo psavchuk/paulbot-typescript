@@ -52,7 +52,11 @@ export const deleteMessageForSession = async (id: string, channelId: string, cha
 }
 
 export const cleanSessions = (channelManager: ChannelManager) => {
+    console.log('--- Starting Session Cleanup ---');
     const files = fs.readdirSync('./sessions');
+
+    let sessionDeleteCount = 0;
+
     files.forEach(file => {
         const data = fs.readFileSync(`./sessions/${file}`, 'utf8');
         const connection: IGuildConnection = JSON.parse(data);
@@ -66,7 +70,12 @@ export const cleanSessions = (channelManager: ChannelManager) => {
             if(deletedMessage) {
                 console.log(`Deleted message for session ${connection.session.id}`);
                 deleteSessionFromFile(connection.session.id);
+                sessionDeleteCount++;
             }
         }
     });
+
+    console.log('--- Finished Session Cleanup ---');
+    console.log(`${sessionDeleteCount} sessions deleted.`);
+
 }

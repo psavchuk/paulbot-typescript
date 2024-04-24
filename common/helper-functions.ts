@@ -4,6 +4,7 @@ import { updateEmbed } from "./embed-functions";
 import { playSong } from "./play-song-functions";
 import { chaptersEnabled } from "../config.json";
 import { rm, readdir } from "fs";
+import { ActivityType } from "discord.js";
 
 export const symbolRegex = new RegExp(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/, 'g');
 export const parenthesisRegex = new RegExp(/\(([^()]+)\)/, 'g');
@@ -33,7 +34,7 @@ export const subscribeToPlayerEvents = (guildId: string) => {
     const player = connection.playerState.player;
 
     player.on('stateChange', (oldState, newState) => {
-        console.log("state change", oldState.status, newState.status);
+        // console.log("state change", oldState.status, newState.status);
         connection.playerState.status = newState.status;
     })
 
@@ -48,18 +49,13 @@ export const subscribeToPlayerEvents = (guildId: string) => {
     });
 
     player.on(AudioPlayerStatus.Idle, async () => {
+        // loop handler
         if(connection.playerState.isLooping === true) {
             setTimeout(playSong, 500, guildId, connection.playerState.currentSong);
             return;
         }
 
-        // handled in skip command
-        // if(connection.playerState.currentSong.chapters?.length > 0) {
-        //     if(++connection.playerState.currentSong.currentChapter < connection.playerState.currentSong.chapters.length - 1) {
-        //         await playSong(guildId, connection.playerState.currentSong);
-        //         return;
-        //     }
-        // }
+        // chapters are handled in skip command
 
         try {
             if(connection.playerState.queue.length === 0 && !connection.playerState.autoplayer.enabled && connection.playerState.currentSong.chapters?.length === 0) {
@@ -79,8 +75,55 @@ export const subscribeToPlayerEvents = (guildId: string) => {
     });
 }
 
+export const updateActivityStatus = () => {
+    const connectionsLength = bot.connections.size;
+
+    let activityName = '';
+    let activityType = null;
+    let activityUrl = '';
+
+    console.log(bot.connections);
+
+    if (connectionsLength === 0) {
+        // activityName += 'custom';
+    } else {
+        activityType = ActivityType.Streaming;
+        activityName += `to ${connectionsLength} channels`;
+
+        const randomInteger = Math.floor(Math.random() * connectionsLength);
+        // let listenerCount = 0;
+        let index = 0;
+        bot.connections.forEach((value) => {
+            // this value is likely not updated and is inaccurate (?)
+            // if (!value.voiceChannel) {
+            //     listenerCount += value.voiceChannel.members.size;
+            // }
+
+            if (index === randomInteger) {
+                if (value.playerState.currentSong.url) {
+                    activityUrl = value.playerState.currentSong.url;
+                }
+            }
+
+            index++;
+        });
+
+        // activityName += ` with ${listenerCount} listeners`;
+    }
+
+    bot.client.user.setActivity(
+        {
+            name: activityName,
+            type: activityType,
+            url: activityUrl
+        }
+    );
+
+    console.log("setting presence", activityName);
+}
+
 //clears title of random symbols and other nonsense
-export const clearTitle = (title, clearParenthesis = true) => {
+export const clearTitle = (title: string, clearParenthesis = true) => {
     if (title) {
         title = title.toLowerCase();
 
@@ -90,7 +133,6 @@ export const clearTitle = (title, clearParenthesis = true) => {
             title = title.replace(bracketRegex, '');
         }
             
-
         title = title.replace(symbolRegex, '');
     
         for (let i = 0; i < titleRegexList.length; i++) {

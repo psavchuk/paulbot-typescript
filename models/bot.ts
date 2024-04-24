@@ -3,7 +3,7 @@ import { ICommand, IGuildConnection } from "./bot.interfaces";
 import { token } from "../token.json";
 import fs from "node:fs";
 import { AudioPlayerStatus } from "@discordjs/voice";
-import { cleanChapterFolder } from "../common/helper-functions";
+import { cleanChapterFolder, updateActivityStatus } from "../common/helper-functions";
 import { sessionCleanupFrequency } from "../config.json";
 import { cleanSessions } from "../common/session-functions";
 
@@ -36,7 +36,9 @@ export class Bot {
         // could be more efficient
         this.client.on('voiceStateUpdate', async (oldState, newState) => {
             const connection = this.connections.get(newState.guild.id);
-            if(!connection) return;
+            if(!connection) {
+                return;
+            }
 
             const members = connection.voiceChannel.members;
             let numOfListeners = 0;
@@ -52,7 +54,7 @@ export class Bot {
                 await this.commands?.get("leave").execute(undefined, false, newState.guild.id);
             } else {
                 // checks if bot was server muted or not and pauses
-                // probably could be better way of checking if the user is Paulbot.
+                // @TODO username should not be hardcoded
                 if(oldState.serverMute !== newState.serverMute) {
                     if(
                         oldState.member.user.username === "PaulBot" && 
@@ -69,7 +71,7 @@ export class Bot {
                 }
             }
 
-            // clean sessions if no connections and last cleanup was more than frequency ago
+            // clean sessions if no connections and last cleanup was more than `frequency` ago
             if (this.connections.size === 0 && this._lastSessionCleanup.getTime() < new Date().getTime() - sessionCleanupFrequency) {
                 cleanSessions(newState.client.channels);
                 this._lastSessionCleanup = new Date();
@@ -97,6 +99,9 @@ export class Bot {
                     await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
                 }
             }
+
+            // @TODO is this right spot for this?
+            updateActivityStatus();
         });
 
         this.client.on('error', console.error);
