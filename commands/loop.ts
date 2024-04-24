@@ -16,24 +16,6 @@ export default {
             return;
         }
 
-        if (connection.playerState.isLooping === false) {
-            updateMessageRowEmbedButton(
-                connection.messageState.messageRows[loopButton.row].components[loopButton.id],
-                "End Loop",
-                ButtonStyle.Success,
-                false
-            );
-            connection.playerState.isLooping = true;
-        }
-        else {
-            updateMessageRowEmbedButton(
-                connection.messageState.messageRows[loopButton.row].components[loopButton.id],
-                "Start Loop",
-                ButtonStyle.Secondary,
-                false
-            );
-            connection.playerState.isLooping = false;
-        }
 
         if (connection.playerState.status === AudioPlayerStatus.Idle && connection.playerState.isLooping === true) {
             await playSong(id, connection.playerState.currentSong);

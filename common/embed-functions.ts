@@ -1,6 +1,6 @@
 import { AudioPlayerStatus } from "@discordjs/voice";
 import { ButtonBuilder, ButtonStyle, EmbedBuilder, TextChannel } from "discord.js";
-import { autoplayButton, clearButton, embedColor, pauseButton, soundcloudColor, youtubeColor } from "../models/bot.constants";
+import { autoplayButton, clearButton, embedColor, loopButton, pauseButton, soundcloudColor, youtubeColor } from "../models/bot.constants";
 import { IGuildConnection, ISong, ISongEmbed } from "../models/bot.interfaces";
 import { millisecondsToMinutes } from "./helper-functions";
 
@@ -47,8 +47,9 @@ export const updateInteraction = async (connection: IGuildConnection, interactio
 
 export const createEmbed = async (connection: IGuildConnection, status?: AudioPlayerStatus) => {
     // get rid of old message
-    if(connection.messageState.currentMessage) 
+    if(connection.messageState.currentMessage) {
         await connection.messageState.currentMessage.delete();
+    }
 
     updateAuthorEmbed(connection, status);
     updateClearQueueButton(connection);
@@ -108,9 +109,6 @@ export const updateAuthorEmbed = (connection: IGuildConnection, status?: AudioPl
     }    
 
     embed.setAuthor({name:author});
-
-    // if(connection.messageState.currentMessage)
-    //     connection.messageState.currentMessage.edit({ embeds: [embed] });
 }
 
 export const updateTitleEmbed = (connection: IGuildConnection, song: ISong) => {
@@ -128,30 +126,29 @@ export const updateSongEmbed = (connection: IGuildConnection, embedOptions: ISon
     embed.data.description = null;
     updateTitleEmbed(connection, embedOptions.song);
 
+    // set fields
     embed.data.fields = [];
-    if (embedOptions.queuedBy)
+    if (embedOptions.queuedBy) {
         embed.addFields({name: "Queued By:", value: embedOptions.queuedBy});
-    if (connection.playerState.autoplayer.enabled && connection.playerState.autoplayer.originalSong && !embedOptions.queuedBy)
+    }
+    if (connection.playerState.autoplayer.enabled && connection.playerState.autoplayer.originalSong && !embedOptions.queuedBy) {
         embed.addFields({name: "Autoplaying From:", value: connection.playerState.autoplayer.originalSong.title});
-
+    }
     embed.addFields(
         // {name: "Uploader:", value: embedOptions.song.author},
         {name: "Song Duration:", value: embedOptions.duration}
     ); 
-
     if (embedOptions.song.chapters?.length > 0) {
-        // embedOptions.song.chapters[embedOptions.song.currentChapter].duration
         embed.addFields({name: "Chapter From:", value: embedOptions.song.title});
         embed.addFields({name: "Chapter Duration:", value: millisecondsToMinutes(embedOptions.song.chapters[embedOptions.song.currentChapter].duration)});
     }
 
+    // set other settings
     embed.setImage(embedOptions.image);
     embed.setURL(embedOptions.url);
     embed.setColor(
         embedOptions.mode === 0 ? youtubeColor : soundcloudColor
     );
-
-    // updateMessageRowButtons(connection);
 }
 
 // updates button states based on player state
@@ -169,6 +166,14 @@ export const updateMessageRowButtons = (connection: IGuildConnection) => {
         connection.messageState.messageRows[pauseButton.row].components[pauseButton.id],
         connection.playerState.status === AudioPlayerStatus.Paused ? "Resume" : "Pause",
         connection.playerState.status === AudioPlayerStatus.Paused ? ButtonStyle.Success : ButtonStyle.Secondary,
+        false
+    );
+
+    // loop
+    updateMessageRowEmbedButton(
+        connection.messageState.messageRows[loopButton.row].components[loopButton.id],
+        connection.playerState.isLooping ? "End Loop" : "Start Loop",
+        connection.playerState.isLooping ? ButtonStyle.Success : ButtonStyle.Secondary,
         false
     );
 }
