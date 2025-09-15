@@ -15,7 +15,7 @@ export default {
 
         session.endTime = new Date();
 
-        if(apiEnabled) {
+        if (apiEnabled) {
             await putSessionAPI(session);
         }
 
@@ -47,7 +47,7 @@ export default {
 
         console.log("connection deleted");
 
-        if(interaction && deferReply) {
+        if (interaction && deferReply) {
             await interaction?.deferReply();
             await interaction?.deleteReply();
         }

@@ -15,6 +15,7 @@ export interface ISession {
     startTime: Date;
     endTime: Date;
     songsPlayed: number;
+    favorited?: boolean;
 }
 
 export interface IMessageState {

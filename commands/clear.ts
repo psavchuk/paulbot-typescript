@@ -10,7 +10,7 @@ export default {
 
         console.log("Queue cleared by ", userNickname);
 
-        if(connection.playerState.queue.length > 0) {
+        if (connection.playerState.queue.length > 0) {
             connection.playerState.queue.length = 0;
 
             await updateInteraction(connection, interaction);

@@ -8,22 +8,22 @@ export default {
     data: new SlashCommandBuilder().setName("continuesession").setDescription("Continues a session based on ID"),
     async execute(interaction?: any, deferReply: boolean = true) {
         const interactionEmbed = interaction.message.embeds[0];
-        if(!interactionEmbed) {
+        if (!interactionEmbed) {
             return;
         }
         
-        if(!bot.connections.get(interaction.guildId)) {
+        if (!bot.connections.get(interaction.guildId)) {
             await bot.commands.get('join').execute(interaction, false, false);
         } else {
             return;
         }
 
         let connection = bot.connections.get(interaction?.guildId);
-        if(!connection) {
+        if (!connection) {
             return;
         }
 
-        if(interaction && deferReply) {
+        if (interaction && deferReply) {
             await interaction.deferReply({ ephemeral: true });
         }
 
@@ -52,7 +52,7 @@ export default {
 
         // `current song` handling is confused
         // so instead we remove the current song and add it to top of queue, then run the skip command
-        if(connection.playerState.currentSong) {
+        if (connection.playerState.currentSong) {
             connection.playerState.queue.unshift(cloneDeep(connection.playerState.currentSong));
             connection.playerState.currentSong = undefined;
         }
@@ -68,7 +68,7 @@ export default {
             console.log(error);
         }
 
-        if(interaction && !interaction.replied && deferReply) {
+        if (interaction && !interaction.replied && deferReply) {
             // sometimes this code bonks out, so we wrap it in a try catch
             try {
                 await interaction?.deleteReply();

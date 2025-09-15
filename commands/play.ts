@@ -55,12 +55,12 @@ export default {
             }
             else {
                 // extract id from url
-                if(query.includes('youtube.com'))
+                if (query.includes('youtube.com'))
                 {
                     query = query.split('?v=')[1].split('&')[0];
                 }
 
-                if(query.includes('youtu.be'))
+                if (query.includes('youtu.be'))
                 {
                     query = query.split('.be/')[1].split('?')[0];
                 }
@@ -84,7 +84,7 @@ export default {
             await bot.commands.get('skip').execute(undefined, false, interaction.guildId);
         }
         else {
-            if(connection.playerState.currentSong) {
+            if (connection.playerState.currentSong) {
                 await updateEmbed(connection);
             }
         }

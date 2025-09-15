@@ -19,7 +19,7 @@ export default {
         }
 
         // use skip command to jumpstart autoplay if we are currently idle when command is activated
-        if(connection.playerState.status === AudioPlayerStatus.Idle && connection.playerState.autoplayer.enabled === true) {
+        if (connection.playerState.status === AudioPlayerStatus.Idle && connection.playerState.autoplayer.enabled === true) {
             await interaction.deferReply({ ephemeral: true });
             await bot.commands.get('skip').execute(undefined, false, interaction?.guildId || guildId);
             await interaction.deleteReply();

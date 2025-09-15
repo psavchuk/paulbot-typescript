@@ -5,11 +5,11 @@ export default {
     data: new SlashCommandBuilder().setName("deletesession").setDescription("Deletes a session based on ID"),
     async execute(interaction?: any, deferReply: boolean = true) {
         const interactionEmbed = interaction?.message?.embeds[0];
-        if(!interactionEmbed) {
+        if (!interactionEmbed) {
             return;
         }
 
-        if(interaction && deferReply) {
+        if (interaction && deferReply) {
             await interaction.deferReply({ ephemeral: true });
         }
 
@@ -18,7 +18,7 @@ export default {
             deleteSessionFromFile(value);
             await interaction.message.delete();
 
-            if(interaction && deferReply) {
+            if (interaction && deferReply) {
                 await interaction?.followUp({ 
                     content: `Session #${value} Deleted`, 
                     ephemeral: true 

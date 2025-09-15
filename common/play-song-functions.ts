@@ -1,7 +1,6 @@
 import { AudioPlayerStatus, AudioResource, createAudioResource, StreamType } from "@discordjs/voice";
 import { SoundCloud } from "scdl-core";
 import YouTube from "youtube-sr";
-import { getInfo } from "ytdl-core-discord";
 import ytpl from "ytpl";
 import { bot } from "..";
 import { maxPlayedSongLength, videoIdRegex } from "../models/bot.constants";
@@ -10,17 +9,20 @@ import { postPlayedSongAPI, postSongAPI } from "./api-functions";
 import { updateEmbed, updateSongEmbed } from "./embed-functions";
 import { millisecondsToMinutes, secondsToMinutes } from "./helper-functions";
 import { apiEnabled, chaptersEnabled } from "../config.json";
-import ytdl from 'ytdl-core-discord';
 import fs from "fs";
 import { spawn } from 'node:child_process';
 import pathToFfmpeg from 'ffmpeg-static';
-import ytdlCore = require("ytdl-core");
+// import ytdlCore = require("ytdl-core");
+import ytdlCore = require("@distube/ytdl-core");
+import { getInfo } from "@distube/ytdl-core";
+// import ytdl = require("@distube/ytdl-core");
+import ytdl from "@distube/ytdl-core";
 
 
 export const playSong = async (guildId: string, song: ISong) => {
     const connection = bot.connections.get(guildId);
-    if(!connection) return;
-    if(!song) return;
+    if (!connection) return;
+    if (!song) return;
 
     let resource: AudioResource;
 
@@ -41,7 +43,7 @@ export const playSong = async (guildId: string, song: ISong) => {
     // catch the elusive "resource has ended" error
     try {
         //play the music
-        if(resource) {
+        if (resource) {
             connection.playerState.player.play(resource);
             connection.connection.subscribe(connection.playerState.player);
             connection.playerState.currentAttempts = 0;
@@ -51,7 +53,7 @@ export const playSong = async (guildId: string, song: ISong) => {
             return false;
         }
     } catch (error) {
-        if(connection.playerState.currentAttempts < 5)
+        if (connection.playerState.currentAttempts < 5)
         {
             connection.playerState.currentAttempts ++;
             setTimeout(playSong, 500, guildId, song);
@@ -69,7 +71,7 @@ export const playSong = async (guildId: string, song: ISong) => {
     connection.session.songsPlayed++;
 
     // if queued by a person
-    if(song.queuedBy) {
+    if (song.queuedBy) {
         // clear the autoplay queue so we can base our future songs off this one
         connection.playerState.autoplayer.queue.length = 0;
     }
@@ -117,7 +119,7 @@ export const playSong = async (guildId: string, song: ISong) => {
     await updateEmbed(connection, AudioPlayerStatus.Playing);
 
     // api calls
-    if(apiEnabled) {
+    if (apiEnabled) {
         await postSongAPI(song);
         await postPlayedSongAPI(connection.session, song, datePlayed);
     }
@@ -137,9 +139,9 @@ export const queueYoutubeSongUrl = async (connection: IGuildConnection, options:
             currentChapter: -1
         };
     
-        if(song.chapters?.length > 0) {
-            await createChapterResources(song);
-        }
+        // if (song.chapters?.length > 0) {
+        //     await createChapterResources(song);
+        // }
         
         if (options.playTop) {
             connection.playerState.queue.unshift(song);
@@ -182,13 +184,13 @@ export const queueYoutubeSongQuery = async (connection: IGuildConnection, option
 export const queueYoutubePlaylist = async (connection: IGuildConnection, options: IQueueOptions): Promise<IQueueResponse> => {
     const isValid =  await ytpl.validateID(options.query);
 
-    if(isValid) {
+    if (isValid) {
         try {
             const playlistInfo = await ytpl(options.query);
             const playlistTemporaryQueue: ISong[] = [];
 
-            if(playlistInfo) {
-                if(connection) {
+            if (playlistInfo) {
+                if (connection) {
                     for (let i = 0; i < playlistInfo.items.length; i++) {
                         const element = playlistInfo.items[i];
     
@@ -244,7 +246,7 @@ export const queueSoundcloudSong = async (connection: IGuildConnection, options:
     await SoundCloud.connect();
     const track = await SoundCloud.tracks.getTrack(options.query);
 
-    if(!track) return;
+    if (!track) return;
 
     connection.playerState.queue.push({
         url: track.permalink_url,
@@ -270,10 +272,16 @@ export const getChaptersFromDescription = (description: string, songDuration: nu
     let songDurationMS = songDuration * 1000;
 
     for (let i = descriptionArray.length - 1; i >= 0; i--) {
+        // the row in the description
         const element = descriptionArray[i];
         // regex that matches for 00:00:00 or 00:00
         const matches = element.match(/\d+[:]\d+[:]?\d+/gm);
-        if(matches?.length > 0) { 
+
+        // make sure that the start of the line is the time
+        // this avoids false positives possibly
+        if (matches?.length > 0 && element.startsWith(matches[0])) {        
+            console.log("Chapter matches found: ", matches);
+
             let time = 0;
             let multiplier = 1000;
             let splitted = matches[0].split(":");
@@ -299,72 +307,74 @@ export const getChaptersFromDescription = (description: string, songDuration: nu
 // loops through chapters in a youtube video and splits it up based on the time stamps
 // stored locally in ./chapters folder, deleted when bot is turned off (@TODO look for better implementation, ie after resource is finished being used)
 // currently redownloads even if chapter already exists in folder, could cause many bugs
-export const createChapterResources = async (song: ISong) => {
-    if(song.chapters?.length > 0 && chaptersEnabled) {
-        // create directory to store chapters if doesn't exist
-        fs.mkdir(`./chapters/${song.url}`, { recursive: true}, err => {
-            if(err) console.log(err);
-        });
+// export const createChapterResources = async (song: ISong) => {
+//     console.log(`--Creating chapters for ${song.title}--`)
+//     if (song.chapters?.length > 0 && chaptersEnabled) {
+//         // create directory to store chapters if doesn't exist
+//         fs.mkdir(`./chapters/${song.url}`, { recursive: true}, err => {
+//             if (err) console.log(err);
+//         });
 
-        // download full youtube video locally (faster than pulling the full video from youtube every time)
-        const stream = await ytdlCore(song.url, { filter: "audioonly", highWaterMark: 1<<25 });
-        const outStream = fs.createWriteStream(`./chapters/${song.url}/${song.url}.webm`);
-        stream.pipe(outStream);
-        await new Promise(fulfill => outStream.on('close', fulfill)); // wait for write pipe to finish
+//         // download full youtube video locally (faster than pulling the full video from youtube every time)
+//         const stream = ytdlCore(song.url, { filter: "audioonly", highWaterMark: 1<<25 });
+//         const outStream = fs.createWriteStream(`./chapters/${song.url}/${song.url}.webm`);
+//         stream.pipe(outStream);
+//         await new Promise(fulfill => outStream.on('close', fulfill)); // wait for write pipe to finish
 
-        try {
-            for (let i = 0; i < song.chapters.length; i++) {
-                // read the local full youtube video we downloaded
-                const readStream = fs.createReadStream(`./chapters/${song.url}/${song.url}.webm`);
-                const chapter = song.chapters[i];
+//         try {
+//             for (let i = 0; i < song.chapters.length; i++) {
+//                 // read the local full youtube video we downloaded
+//                 const readStream = fs.createReadStream(`./chapters/${song.url}/${song.url}.webm`);
+//                 const chapter = song.chapters[i];
 
-                console.time(chapter.title);
-                console.log(chapter.duration);
+//                 console.time(chapter.title);
 
-                // use ffmpeg to split the video, starting at chapter.time
-                const command = spawn(
-                    `${pathToFfmpeg}`, ['-i', 'pipe:0', '-ss', `${chapter.time}ms`, '-t', `${chapter.duration}ms`, '-f', 'webm', '-c', 'copy', 'pipe:1'], 
-                    { stdio: ['pipe', 'pipe', 'ignore'] }
-                );
+//                 // use ffmpeg to split the video, starting at chapter.time
+//                 const command = spawn(
+//                     `${pathToFfmpeg}`, ['-i', 'pipe:0', '-ss', `${chapter.time}ms`, '-t', `${chapter.duration}ms`, '-f', 'webm', '-c', 'copy', 'pipe:1'], 
+//                     { stdio: ['pipe', 'pipe', 'ignore'] }
+//                 );
 
-                // pipe the ffmpeg query to the read stream we created for the main file
-                // this currently outputs error every time but downloads just fine, need to investigate
-                readStream.pipe(command.stdin).on("error", (e) => {
-                    console.log(e)
-                });
+//                 // pipe the ffmpeg query to the read stream we created for the main file
+//                 // this currently outputs error every time but downloads just fine, need to investigate
+//                 readStream.pipe(command.stdin).on("error", (e) => {
+//                     console.log(e)
+//                 });
 
-                // write the output stream we get from the command / ffmpeg query to a local file
-                const writeStream = fs.createWriteStream(`./chapters/${song.url}/${chapter.title}.webm`);
-                command.stdout.pipe(writeStream);
+//                 // write the output stream we get from the command / ffmpeg query to a local file
+//                 const writeStream = fs.createWriteStream(`./chapters/${song.url}/${chapter.title}.webm`);
+//                 command.stdout.pipe(writeStream);
                 
-                // await all pipes to close
-                await Promise.all([
-                    new Promise(fulfill => writeStream.on('close', fulfill)),
-                    new Promise(fulfill => command.stdin.on('close', fulfill)),
-                    new Promise(fulfill => command.stdout.on('close', fulfill))
-                ]);
+//                 // await all pipes to close
+//                 await Promise.all([
+//                     new Promise(fulfill => writeStream.on('close', fulfill)),
+//                     new Promise(fulfill => command.stdin.on('close', fulfill)),
+//                     new Promise(fulfill => command.stdout.on('close', fulfill))
+//                 ]);
 
-                readStream.close();
-                writeStream.end();
-                command.kill();
+//                 readStream.close();
+//                 writeStream.end();
+//                 command.kill();
 
-                console.timeEnd(chapter.title);
-            }
-        } catch (error) {
-            console.log(error);
-        }
-    }
-}
+//                 console.timeEnd(chapter.title);
+//             }
+//         } catch (error) {
+//             console.log(error);
+//         }
+//     }
+//     console.log(`--Finished creating chapters for ${song.title}--`)
+// }
 
 export const createYoutubeResource = async (song: ISong): Promise<AudioResource> => {
-    if(song.chapters?.length > 0 && chaptersEnabled) {
+    if (song.chapters?.length > 0 && chaptersEnabled) {
         const stream = fs.createReadStream(`./chapters/${song.url}/${song.chapters[song.currentChapter].title}.webm`);
         const resource = createAudioResource(stream);
         return resource;
     }
 
     const stream = await ytdl(song.url, { filter: "audioonly", highWaterMark: 1<<25 });
-    return createAudioResource(stream, { inputType: StreamType.Opus });
+    // return createAudioResource(stream, { inputType: StreamType.Opus });
+    return createAudioResource(stream);
 }
 
 export const createSoundcloudResource = async (song: ISong): Promise<AudioResource> => {
@@ -374,10 +384,10 @@ export const createSoundcloudResource = async (song: ISong): Promise<AudioResour
 
 export const addPlayedSong = (guildId: string, song: ISong) => {
     const connection = bot.connections.get(guildId);
-    if(!connection) return;
+    if (!connection) return;
 
     const playedSongs = connection.playerState.playedSongs
-    if(playedSongs.length > maxPlayedSongLength)
+    if (playedSongs.length > maxPlayedSongLength)
         playedSongs.shift();
     playedSongs.push(song);
 }

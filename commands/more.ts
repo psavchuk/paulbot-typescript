@@ -8,14 +8,14 @@ export default {
         const connection = bot.connections.get(interaction.guildId);
         const messageState = connection.messageState;
 
-        if(messageState.messageRows.length - 1 > messageState.currentMessageRow)
+        if (messageState.messageRows.length - 1 > messageState.currentMessageRow)
             messageState.currentMessageRow ++;
         else
             messageState.currentMessageRow = 0;
 
         await updateInteraction(connection, interaction);
 
-        // if(deferReply) {
+        // if (deferReply) {
         //     await interaction?.deferReply();
         //     await interaction?.deleteReply();
         // }

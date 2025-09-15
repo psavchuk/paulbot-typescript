@@ -29,7 +29,7 @@ export const isValidHttpUrl = (string: string) => {
 // could possibly be moved somewhere else
 export const subscribeToPlayerEvents = (guildId: string) => {
     const connection = bot.connections.get(guildId);
-    if(!connection) return;
+    if (!connection) return;
 
     const player = connection.playerState.player;
 
@@ -50,7 +50,7 @@ export const subscribeToPlayerEvents = (guildId: string) => {
 
     player.on(AudioPlayerStatus.Idle, async () => {
         // loop handler
-        if(connection.playerState.isLooping === true) {
+        if (connection.playerState.isLooping === true) {
             setTimeout(playSong, 500, guildId, connection.playerState.currentSong);
             return;
         }
@@ -58,7 +58,7 @@ export const subscribeToPlayerEvents = (guildId: string) => {
         // chapters are handled in skip command
 
         try {
-            if(connection.playerState.queue.length === 0 && !connection.playerState.autoplayer.enabled && connection.playerState.currentSong.chapters?.length === 0) {
+            if (connection.playerState.queue.length === 0 && !connection.playerState.autoplayer.enabled && connection.playerState.currentSong.chapters?.length === 0) {
                 connection.playerState.status = AudioPlayerStatus.Idle;
                 await updateEmbed(connection, AudioPlayerStatus.Idle);
                 return;
@@ -75,14 +75,12 @@ export const subscribeToPlayerEvents = (guildId: string) => {
     });
 }
 
-export const updateActivityStatus = () => {
+export const updateActivityStatus = (client: any) => {
     const connectionsLength = bot.connections.size;
 
     let activityName = '';
     let activityType = null;
     let activityUrl = '';
-
-    console.log(bot.connections);
 
     if (connectionsLength === 0) {
         // activityName += 'custom';
@@ -111,9 +109,9 @@ export const updateActivityStatus = () => {
         // activityName += ` with ${listenerCount} listeners`;
     }
 
-    bot.client.user.setActivity(
+    client.user.setActivity(
+        activityName,
         {
-            name: activityName,
             type: activityType,
             url: activityUrl
         }
@@ -127,7 +125,7 @@ export const clearTitle = (title: string, clearParenthesis = true) => {
     if (title) {
         title = title.toLowerCase();
 
-        if(clearParenthesis)
+        if (clearParenthesis)
         {
             title = title.replace(parenthesisRegex, '');
             title = title.replace(bracketRegex, '');
@@ -153,7 +151,7 @@ export const secondsToMinutes = (timeInSeconds): string => {
     let minutes = (Math.floor(timeInSeconds / 60));
     let seconds = ((timeInSeconds % 60) - 1);
 
-    if(seconds < 0)
+    if (seconds < 0)
     {
         minutes += seconds;
         seconds = (60 + seconds);
@@ -162,15 +160,15 @@ export const secondsToMinutes = (timeInSeconds): string => {
     let minutesStr = minutes.toFixed(0);
     let secondsStr = seconds.toFixed(0);
 
-    if(minutesStr.length === 1 && hours !== "0") {
+    if (minutesStr.length === 1 && hours !== "0") {
         minutesStr = "0" + minutes;
     }
 
-    if(secondsStr.length === 1) {
+    if (secondsStr.length === 1) {
         secondsStr = "0" + seconds;
     }
 
-    if(hours === "0")
+    if (hours === "0")
         return String(minutesStr + ":" + secondsStr);
     else
         return String(hours + ":" + minutesStr + ":" + secondsStr);
@@ -182,10 +180,10 @@ export const millisecondsToMinutes = (timeInMilliseconds): string => {
 }
 
 export const cleanChapterFolder = async () => {
-    if(chaptersEnabled) {
+    if (chaptersEnabled) {
         // rm(path, { recursive: true, force: true })
         readdir("./chapters/", (err, files) => {
-            if(err) {
+            if (err) {
                 console.log(err);
                 return;
             }

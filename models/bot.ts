@@ -1,8 +1,8 @@
-import { Client, Collection, InteractionType } from "discord.js";
+import { Client, Collection, GuildMember, InteractionType } from "discord.js";
 import { ICommand, IGuildConnection } from "./bot.interfaces";
 import { token } from "../token.json";
 import fs from "node:fs";
-import { AudioPlayerStatus } from "@discordjs/voice";
+import { AudioPlayerStatus } from "@discordjs/voice"
 import { cleanChapterFolder, updateActivityStatus } from "../common/helper-functions";
 import { sessionCleanupFrequency } from "../config.json";
 import { cleanSessions } from "../common/session-functions";
@@ -32,37 +32,30 @@ export class Bot {
     }
 
     private async _initEvents() {
-        // determine if there is anyone left in a channel
-        // could be more efficient
+        // subscribes to voice channel updates
         this.client.on('voiceStateUpdate', async (oldState, newState) => {
             const connection = this.connections.get(newState.guild.id);
-            if(!connection) {
+            if (!connection) {
                 return;
             }
 
-            const members = connection.voiceChannel.members;
-            let numOfListeners = 0;
+            const numOfListeners = this.getNumberOfListeners(connection.voiceChannel.members);
 
-            members.forEach((member) => {
-                if(!member.user.bot) {
-                    numOfListeners ++;
-                    return;
-                }
-            });
-
-            if(numOfListeners === 0) {
+            if (numOfListeners === 0) {
+                // if no listeners left we leave the channel and end session
+                // @TODO future enhancement could be to delay this leaving
                 await this.commands?.get("leave").execute(undefined, false, newState.guild.id);
             } else {
                 // checks if bot was server muted or not and pauses
                 // @TODO username should not be hardcoded
-                if(oldState.serverMute !== newState.serverMute) {
-                    if(
+                if (oldState.serverMute !== newState.serverMute) {
+                    if (
                         oldState.member.user.username === "PaulBot" && 
                         newState.member.user.username === "PaulBot" && 
                         oldState.member.user.bot && 
                         newState.member.user.bot
                     ) {
-                        if(
+                        if (
                             newState.serverMute && connection.playerState.status === AudioPlayerStatus.Playing ||
                             !newState.serverMute && connection.playerState.status === AudioPlayerStatus.Paused
                         )
@@ -82,13 +75,17 @@ export class Bot {
         this.client.on('interactionCreate', async (interaction: any) => {
             let command: ICommand;
 
-            if(interaction.type === InteractionType.ApplicationCommand)
+            if (interaction.type === InteractionType.ApplicationCommand) {
                 command = this.commands?.get(interaction.commandName);
+            }
             
-            if(interaction.isButton())
+            if (interaction.isButton()) {
                 command = this.commands?.get(interaction.customId);
+            }
 
-            if (!command) return;
+            if (!command) {
+                return;
+            }
         
             try {
                 await command.execute(interaction, true);
@@ -101,10 +98,24 @@ export class Bot {
             }
 
             // @TODO is this right spot for this?
-            updateActivityStatus();
+            // Maybe we can emit event on audio player state change
+            updateActivityStatus(this.client);
         });
 
         this.client.on('error', console.error);
+    }
+
+    private getNumberOfListeners(members: Collection<string, GuildMember>): number {
+        let numOfListeners = 0;
+    
+        members.forEach((member) => {
+            if (!member.user.bot) {
+                numOfListeners ++;
+                return;
+            }
+        });
+    
+        return numOfListeners;
     }
 
     async destroy() {

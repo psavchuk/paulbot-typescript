@@ -47,7 +47,7 @@ export const updateInteraction = async (connection: IGuildConnection, interactio
 
 export const createEmbed = async (connection: IGuildConnection, status?: AudioPlayerStatus) => {
     // get rid of old message
-    if(connection.messageState.currentMessage) {
+    if (connection.messageState.currentMessage) {
         await connection.messageState.currentMessage.delete();
     }
 
@@ -90,19 +90,19 @@ export const updateAuthorEmbed = (connection: IGuildConnection, status?: AudioPl
             break;
     }
 
-    if(playerState.isLooping) {
+    if (playerState.isLooping) {
         author += '| Looping Current Song';
     }
     else {
-        if(playerState.currentSong.chapters?.length > 0) {
+        if (playerState.currentSong.chapters?.length > 0) {
             author += `| Chapters left in Song: ${playerState.currentSong.chapters?.length - playerState.currentSong.currentChapter - 1} `;
         }
 
-        if(playerState.queue.length > 0) {
+        if (playerState.queue.length > 0) {
             author += `| Songs left in Queue: ${playerState.queue.length} `;
         }
         else {
-            if(playerState.autoplayer.enabled) {
+            if (playerState.autoplayer.enabled) {
                 author += '| In Autoplay Mode ';
             }
         }
@@ -113,7 +113,7 @@ export const updateAuthorEmbed = (connection: IGuildConnection, status?: AudioPl
 
 export const updateTitleEmbed = (connection: IGuildConnection, song: ISong) => {
     const embed = connection.messageState.embed;
-    if(song.chapters?.length > 0) {
+    if (song.chapters?.length > 0) {
         embed.setTitle(song.chapters[song.currentChapter]?.title);
     }
     else {
@@ -178,9 +178,15 @@ export const updateMessageRowButtons = (connection: IGuildConnection) => {
     );
 }
 
-export const updateMessageRowEmbedButton = (button: ButtonBuilder, label: string, style: ButtonStyle, disabled?: boolean) => {
-    button.setLabel(label);
-    button.setStyle(style);
+export const updateMessageRowEmbedButton = (button: ButtonBuilder, label?: string, style?: ButtonStyle, disabled?: boolean) => {
+    if (label) {
+        button.setLabel(label);
+    }
+
+    if (style) {
+        button.setStyle(style);
+    }
+
     button.data.disabled = disabled;
 }
 
@@ -198,7 +204,7 @@ export const updateClearQueueButton = (connection: IGuildConnection) => {
 // export const evaluateChapter = (duration: number, song: ISong): string => {
 //     const chapters = song.chapters;
 //     for (let i = 0; i < chapters.length; i++) {
-//         if(duration >= chapters[i].time * 1000 && duration < chapters[i+1].time * 1000) {
+//         if (duration >= chapters[i].time * 1000 && duration < chapters[i+1].time * 1000) {
 //             song.currentChapter = i;
 //             return chapters[i].title;
 //         }

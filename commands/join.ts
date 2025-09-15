@@ -70,14 +70,14 @@ export default {
 
         bot.connections.set(interaction.guildId, guildConnection);
 
-        if(subscribeToEvents) {
+        if (subscribeToEvents) {
             subscribeToPlayerEvents(interaction.guildId);
         }
         
-        if(apiEnabled)
+        if (apiEnabled)
             await postSessionAPI(guildConnection.session);
 
-        if(deferReply) {
+        if (deferReply) {
             await interaction?.deferReply();
             await interaction?.deleteReply();
         }

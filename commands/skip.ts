@@ -50,7 +50,7 @@ export default {
             }
         }
 
-        if(song) {
+        if (song) {
             // connection.playerState.player.unpause();
 
             if (interaction && deferReply && !interaction.replied) {

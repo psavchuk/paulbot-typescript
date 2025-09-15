@@ -37,6 +37,11 @@ export const clearButton: IButton = {
     row: 1
 };
 
+export const favoriteSessionButton: IButton = {
+    id: 3,
+    row: 1
+}
+
 // button rows
 export let initialRow = new ActionRowBuilder<ButtonBuilder>()
     .addComponents([
@@ -61,6 +66,10 @@ export let sessionEndedRow = new ActionRowBuilder<ButtonBuilder>()
             .setCustomId('deletesession')
             .setLabel('Delete')
             .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
+            .setCustomId('favoritesession')
+            .setEmoji('❤️')
+            .setStyle(ButtonStyle.Secondary),
     ]);
 
 export let rowOne = new ActionRowBuilder<ButtonBuilder>()

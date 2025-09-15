@@ -33,6 +33,14 @@ export const getSessionFromFile = (sessionId: string): IGuildConnection => {
     return JSON.parse(data);
 }
 
+export const favoriteSession = (sessionId: string) => {
+    const session = getSessionFromFile(sessionId);
+    console.log("Favoriting session:", session);
+    session.session.id = sessionId;
+    session.session.favorited = true;
+    storeSessionInFile(session); // ???
+}
+
 export const deleteSessionFromFile = (sessionId: string): boolean => {
     try {
         fs.unlinkSync(`./sessions/${sessionId}.json`);
@@ -61,13 +69,17 @@ export const cleanSessions = (channelManager: ChannelManager) => {
         const data = fs.readFileSync(`./sessions/${file}`, 'utf8');
         const connection: IGuildConnection = JSON.parse(data);
 
-        if(new Date(connection?.session.endTime).getTime() < new Date().getTime() - sessionExpiration) {
+        if (connection.session.favorited) {
+            return;
+        }
+
+        if (new Date(connection?.session.endTime).getTime() < new Date().getTime() - sessionExpiration) {
             console.log(`Deleting session ${connection.session.id}`);
             console.log(connection.messageState);
 
             const deletedMessage = deleteMessageForSession(connection.messageState.currentMessageId, connection.messageState.currentMessageChannelId, channelManager);
 
-            if(deletedMessage) {
+            if (deletedMessage) {
                 console.log(`Deleted message for session ${connection.session.id}`);
                 deleteSessionFromFile(connection.session.id);
                 sessionDeleteCount++;
